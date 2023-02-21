@@ -27,6 +27,16 @@ Initialization:
 	epRead := readIni("epRead")
 	fc := readIni("forecast")
 }
+
+; y := ComObject("Msxml2.DOMDocument.3.0")
+; y.load("devfiles\guac.xml")
+
+; k := y.selectNodes("/root/id")
+; MsgBox k.Length
+
+ExitApp
+
+
 readIni(section) {
 /*	Reads a set of variables
 

@@ -247,338 +247,338 @@
 ; ================================================================================================
 
 class msgbox2 {
-  maxWidth := 350, width := 0, Height := 0, x := "", y := ""          ; ===== user-adjustable properties
-  fontSize := 8, fontFace := "Verdana", txtColor := "Default", bgColor := "Default", btnMarXr := 3, btnMarYr := 1
-  btnList := 0, btnTextW := false, btnAlign := "right", help := "", helpText := "",  btnMarx := 0, btnMarY := 0
-  parent := 0, modal := 0, selectable := false, noCloseBtn := false, icon := "", margin := 0
-  
-  criticalValue := A_IsCritical ; thanks to robodesign for this       ; ===== support properties
-  minWidth := 150, btnCount := 0, btnDefault := 1, bMWd := 0, bMWc := 0, bMW := 0, scale := A_ScreenDPI / 96
-  
-  edit:="", editMsg:="", editBox:=false, editText:="",                ; ==== default control settings
-  check:="", checkMsg:="", checkMsgVal:=0, checkValue:="",   dropList:="", dropListMsg:="", dropListMsgVal:=1, dropListText:=""
-  combo:="", comboMsg:="", comboMsgVal:=1, comboText:="",    list:="", listText:="", listMsg:="", listVal:=1, listRows:=0, ClassNN := ""
-  
-  helpDims := {}, btnDims := {}, btnListW := [], curMon := 0, pDims := {} ; ==== suggested NO modificatin
-  totalWidth := 0, totalHeight := 0, ctlWidth := 0, adjHeight := 0, adjWidth := 0, sPadR := 1.25
-  charList := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", avg := "", testDlg := ""
-  helpCallback := ""
-  
-  __New(sMsg,title:="",options:="") {
-      Critical "off"
-      this.sMsg := sMsg, this.options := options, this.title := title, iconHt := 32 * this.scale
-      
-      mRightClick := ObjBindMethod(this,"RightClick") ; binding methods/events
-      OnMessage(0x204,mRightClick)
-      mCloseWin := ObjBindMethod(this,"CloseWin")
-      OnMessage(0x0112,mCloseWin)
-      this.mContextMenu := ObjBindMethod(this,"ContextMenu"), this.mButtonPress := ObjBindMethod(this,"ButtonPress")
-      
-      errMsg := "Invalid Option`r`n`r`nbtnList:0 >  OK`r`nbtnList:1 >  OK / Cancel`r`nbtnList:2 >  Abort / Retry / Ignore`r`n"
-      . "btnList:3 >  Yes / No / Cancel`r`nbtnList:4 >  Yes / No`r`nbtnList:5 >  Retry / Cancel`r`nbtnList:6 >  Cancel / Try Again / Continue`r`n`r`n"
-      . "Or`r`n`r`nbtnList:button text|button text|..."
-      
-      optArr := StrSplit(options,",")         ; parse user options and store
-      Loop optArr.Length {
-          If ((o := optArr[A_Index])="")
-              Continue
-          curOpt := SubStr(o,1,(sep:=InStr(o,":"))-1)
-          curVal := SubStr(o,sep+1)
-          this.%curOpt% := Trim(curVal,":")
-      }
-      
-      this.ProcControls() ; process user specified controls: edit, check, list, dropList, combo
-      
-      this.parent := this.modal ? this.modal : this.parent
-      this.avg := this.txtDims("Testing 1 2 3","avgDims")
-      this.btnMarX := this.btnMarX ? this.btnMarX : this.avg.w * this.btnMarXr
-      this.btnMarY := this.btnMarY ? this.btnMarY : this.avg.h * this.btnMarYr
-      
-      this.icon := this.PickIcon(this.icon), this.icon.h := iconHt, this.icon.w := iconHt
-      sPad := this.fontSize * this.sPadR, this.sPad := sPad   ; element spacing controlled ; w1.25 / h0.75
-      this.dlgMargin := (this.margin ? this.margin : 10)
-      this.selectable := this.height ? true : this.selectable
-      
-      pX := "", pY := "", pW := 0, pH := 0
-      If WinExist("ahk_id " this.parent)
-          WinGetPos &pX, &pY, &pW, &pH, "ahk_id " this.parent
-      this.curMon  := this.MonitorFromPoint(pX,pY), this.pDims := {Cx:(pX+(pW//2)), Cy:(pY+(pH//2))} ; use parent x/y/w/h to determine center point
-      this.btnDims := this.txtDims("Try Again","btnDims") ; default button dims / no padding
-      
-      this.btnList := this.ProcBtnList(this.btnList) ; === button list processing
-      If (this.btnList = "") { ; error, display msg and return
-          this.__Delete(errMsg)
-          return
-      }
-      
-      bMW := 0
-      Loop Parse this.btnList, "|" ; initial parsing of btnList
-      {
-          If (A_LoopField = "")
-              Continue
-          
-          btnText := RegExReplace(A_LoopField,"\[[\w]+\]$","")
-          btnProp := RegExReplace(A_LoopField,"^[^\[]+|\[|\]","")
-          this.btnDefault := (btnProp = "d") ? A_Index : this.btnDefault
-          btnDims := this.txtDims(btnText,"btn" A_Index)
-          
-          this.btnDims := (btnDims.w > this.btnDims.w) ? btnDims : this.btnDims ; record widest button
-          bMW += btnDims.w + this.btnMarX
-          this.btnListW.InsertAt(A_Index,btnDims.w)
-          
-          this.btnCount := A_Index, btnDims := ""
-      }
-      
-      this.bMWd := this.btnCount * (this.btnDims.w + this.btnMarX)    ; bMW default (all btns same width)
-      this.bMWc := bMW                                                ; bMW custom (btnTextW)
-      
-      this.helpDims := this.txtDims(this.helpText,"help"), hDims := this.helpDims.w + this.btnMarX ; add help btn dimensions
-      this.bMWd += (this.helpDims.w ? hDims : 0), this.bMWc += (this.helpDims.w ? hDims : 0)
-      this.bMW := this.btnTextW ? bMW : this.bMWd                     ; set final bMW
-      
-      this.MakeGui(1)
-  }
-  txtDims(str,ctlName,width:=0) {
-      If (str="")
-          return {x:0,y:0,w:0,h:0}
-      width := width ? " w" width : ""
-      If (this.testDlg = "" And ctlName = "avgDims") { ; get avg char w/h or add element to get dims
-          this.testDlg := Gui(), this.testDlg.SetFont("s" this.fontSize,this.fontFace) ; create dummy GUI, set font
-          this.testDlg.Add("text","xm vavgDims",this.charList), this.testDlg["avgDims"].GetPos(&x,&y,&w,&h) ; avg char w/h
-      } Else this.testDlg.Add("Text","xm v" ctlName width,str), this.testDlg[ctlName].GetPos(&x,&y,&w,&h) ; add element for x/y/w/h
-      return (ctlName = "avgDims") ? {h:h, w:(w//52)} : {x:x, y:y, w:w, h:h}
-  }
-  __Delete(msg := "") {
-      msg ? MsgBox(msg) : "" ; display msgbox if msg/error
-      this.gui := "", this.IH := "", this := "" ; release input hook, destroy GUI, etc...
-  }
-  ProcControls() { ; process user-specified controls
-      If this.check
-          a := StrSplit(this.check,":"), this.checkMsg := a[1], this.checkMsgVal := (a.Has(2) ? a[2] : 0), this.check := ""
-      If this.dropList
-          a := StrSplit(this.dropList,":"), this.dropListMsg := a[1], this.dropListMsgVal := (a.Has(2) ? a[2] : 0), this.dropList := ""
-      If this.edit
-          this.editMsg := ((this.edit="''") ? "" : this.edit), this.editBox := true, this.edit := ""
-      If this.combo
-          a := StrSplit(this.combo,":"), this.comboMsg := a[1], this.comboMsgVal := (a.Has(2) ? a[2] : 0), this.combo := ""
-      If this.list
-          a := StrSplit(this.list,":"), this.listMsg := a[1], this.listMsgVal := (a.Has(2) ? a[2] : 0), this.listRows := (a.Has(3) ? a[3] : 0)
-      If this.help
-          h := StrSplit(this.help,":"), this.helpCallback := (h.Has(2) ? h[2] : ""), this.helpText := h[1], h := ""
-  }
-  ProcBtnList(b) { ; process btnList as int (0-6) or as "text|text|text..."
-      If (Type(b) = "String") And StrLen(b)
-          return b
-      Else If IsInteger(b) And (b >= 0) And (b <= 6) {
-          btnList := (b=0) ? "OK" : (b=1) ? "OK|Cancel" : (b=4) ? "Yes|No" : (b=5) ? "Retry|Cancel" : ""
-          btnList := (b=2) ? "Abort|Retry|Ignore" : (b=3) ? "Yes|No|Cancel" : (b=6) ? "Cancel|Try Again|Continue" : ""
-      } Else If IsInteger(b) And ((b<0) Or (b>6))
-          btnList := ""
-      return btnList ; return of "" indicates error
-  }
-  PickIcon(iconFile) {
-      f := "imageres.dll/", t := iconFile ; f = file / t = icon type
-      r := (t = "error") ? "e" : (t = "question") ? "q" : (t = "warning") ? "w" : (t = "info") ? "i" : ""
-      iconFile := (r="e") ? f "94" : (r="q") ? f "95" : (r="w") ? f "80" : (r="i") ? f "77" : iconFile ; default icons
-      
-      iArr := StrSplit(iconFile,"/"), iconObj := {}
-      iconObj.file := iArr.Has(1) ? iArr[1] : ""
-      iconObj.num := iArr.Has(2) ? iArr[2] : "", iArr := ""
-      return iconObj
-  }
-  MakeGui(ver) {
-      edit:={hwnd:0}, dropList:={hwnd:0}, check:={hwnd:0}, msg:={hwnd:0}, combo:={hwnd:0}, list:={hwnd:0}
-      vScrollW := SysGet(2)
-      
-      If !this.width {
-          msg  := this.txtDims(this.sMsg,"msg",this.maxWidth), msg2 := this.txtDims(this.sMsg,"msg2")
-          msg := (msg.w > msg2.w) ? msg2 : msg        ; take the narrowest one - auto-sizing
-      } Else msg := this.txtDims(this.sMsg,"msg",this.width)  ; user specified width
-      this.ctlWidth := msg.w                                  ; set initial control width
-      
-      g := Gui("-DPIScale" (this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"),this.title)
-      g.MarginX := this.dlgMargin, g.MarginY := this.dlgMargin, this.hwnd := g.Hwnd
-      g.BackColor := this.bgColor, g.SetFont("s" this.fontSize,this.fontFace)
-      
-      If (this.icon.file) { ; this.dlgMargin for x and y = orig
-          iconOptions := "vicon xm ym h" this.icon.h " w-1" (this.icon.num ? " Icon" this.icon.num : "")
-          picCtl := g.Add("Picture",iconOptions,this.icon.file)
-          picCtl.GetPos(&x,&y,&w,&h), this.icon := {x:x,y:y,w:w,h:h,hwnd:picCtl.hwnd,num:this.icon.num,file:this.icon.file}
-      } ; x:=0 ??? for all?
-      
-      mX := (this.icon.file) ? "xm+" (this.icon.w + this.sPad) : "xm"     ; adjust x/y/w/h for sMsg
-      mY := (this.icon.file And msg.h < this.icon.h) ? " ym+" ((this.icon.h/2) - (msg.h/2)) : " ym"
-      mH := (!this.height) ? msg.h : this.height
-      mW := msg.w, mW += (this.selectable ? this.avg.w * 4 : 0)
-      this.ctlWidth := (this.ctlWidth > mW) ? this.ctlWidth : mW ; msg.w or (msg.w + vScrollW estimate)
-      
-      selOps := mX mY " h" mH " w" this.ctlWidth " +Background" this.bgColor " c" this.txtColor (this.selectable ? " ReadOnly" : "")
-      
-      If (this.selectable)
-          msgCtl := g.Add("Edit",selOps " vmsgEdit",""), msgCtl.Value := this.sMsg ; necessary when StrLen(sMsg) > 65535
-      Else msgCtl := g.Add("Text",selOps " vmsg",this.sMsg)
-      
-      msgCtl.GetPos(&x,&y,&w,&h), msg := {x:x,y:y,w:w,h:h,hwnd:msgCtl.hwnd} ; redefine msg dims
-      newY := (msg.h > this.icon.h) ? (this.dlgMargin + msg.h + this.sPad) : (this.dlgMargin + this.icon.h + this.sPad)
-      
-      if (this.listMsg) {
-          listDims := this.txtDims(StrReplace(this.listMsg,"|","`r`n"),"list"), listArr := StrSplit(this.listMsg,"|")
-          this.ctlWidth := ((addW:=listDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
-          
-          listRows := (listArr.Length > 10 And !this.listRows) ? 10 : this.listRows
-          listCtl := g.Add("Listbox","xp y" newY " w" this.ctlWidth " Choose" this.listMsgVal " r" listRows " vlist",listArr)
-          listCtl.GetPos(&x,&y,&w,&h), list := {x:x,y:y,w:w,h:h,hwnd:listCtl.hwnd}
-          newY += list.h + this.sPad, listCtl := ""
-      }
-      
-      if (this.editBox) {
-          editDims := this.txtDims(this.editMsg,"edit")
-          this.ctlWidth := ((addW:=editDims.w+vScrollW) > this.ctlWidth) ? addW : this.ctlWidth
-          
-          editCtl := g.Add("Edit","xp y" newY " w" this.ctlWidth " r1 vedit",this.editMsg)
-          editCtl.GetPos(&x,&y,&w,&h), edit := {x:x,y:y,w:w,h:h,hwnd:editCtl.hwnd}
-          newY += edit.h + this.sPad, editCtl := ""
-      }
-      
-      If (this.dropListMsg) {
-          dropListDims := this.txtDims(StrReplace(this.dropListMsg,"|","`r`n"),"dropList"), dropListArr := StrSplit(this.dropListMsg,"|")
-          this.ctlWidth := ((addW:=dropListDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
-          
-          dropListCtl := g.Add("DropDownList","xp y" newY " w" this.ctlWidth " Choose" this.dropListMsgVal " vdroplist",dropListArr)
-          dropListCtl.GetPos(&x,&y,&w,&h), dropList := {x:x,y:y,w:w,h:h,hwnd:dropListCtl.hwnd}
-          newY += dropList.h + this.sPad, dropListCtl := ""
-      }
-      
-      if (this.comboMsg) {
-          comboDims := this.txtDims(StrReplace(this.comboMsg,"|","`r`n"),"combo"), comboArr := StrSplit(this.comboMsg,"|")
-          this.ctlWidth := ((addW:=comboDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
-          
-          comboCtl := g.Add("ComboBox","xp y" newY " w" this.ctlWidth " Choose" this.comboMsgVal "vcombo",comboArr)
-          comboCtl.GetPos(&x,&y,&w,&h), combo := {x:x,y:y,w:w,h:h,hwnd:comboCtl.hwnd}
-          newY += combo.h + this.sPad, comboCtl := ""
-      }
-      
-      If (this.checkMsg) {
-          chkCtl := g.Add("Checkbox","xp y" newY " vcheck",this.checkMsg), chkCtl.Value := this.checkMsgVal
-          c := chkCtl.GetPos(&x,&y,&w,&h), check := {x:x,y:y,w:w,h:h,hwnd:chkCtl.hwnd}
-          
-          this.ctlWidth := (check.w > this.ctlWidth) ? check.w : this.ctlWidth
-          newY += check.h + this.sPad, chkCtl := ""
-      }
-      
-      widthTest := this.ctlWidth + (this.icon.file ? this.icon.w + this.sPad : 0) ; widest control + icon if enabled
-      this.ctlWidth := ((this.bMW > widthTest) ? (this.bMW - (this.icon.file ? this.icon.w + this.sPad : 0)) : this.ctlWidth) ; adjust for buttons if needed
-      
-      For ctlName, o in g
-          If (o.Name And o.Name != "msg" And o.Name != "icon") ; adjust control widths
-              o.Move(,,this.ctlWidth)
-      
-      this.totalWidth := this.ctlWidth + (this.dlgMargin*2) + (this.icon.file ? (this.icon.w + this.sPad) : 0)
-      this.ctrls := {msg:msg, edit:edit, dropList:dropList, check:check, combo:combo, list:list}
-      
-      If (this.btnAlign = "center")
-          btnX := (this.totalWidth) ? (this.totalWidth/2) - (this.bMW/2) : 0
-      Else If (this.btnAlign = "right")
-          btnX := (this.totalWidth) ? this.totalWidth - this.bMW - this.dlgMargin : 0
-      Else if (this.btnAlign = "left")
-          btnX := (this.totalWidth) ? this.dlgMargin : 0
-      
-      Loop Parse this.btnList, "|" ; list specified buttons
-      {
-          If (A_LoopField) { ; make sure button exists, helpful on zero-length string
-              btnText := RegExReplace(A_LoopField,"\[[\w]+\]$","") ; , btnProp := RegExReplace(A_LoopField,"^[^\[]+|\[|\]","")
-              
-              xy := (A_Index = 1) ? "x" (!IsSet(btnX) ? "m" : btnX) " y" newY : "x+0"
-              bWS := this.btnTextW ? " w" (this.btnListW[A_Index] + this.btnMarX) : " w" (this.btnDims.w + this.btnMarX)
-              def := (A_Index = this.btnDefault) ? " +Default" : ""
-              curOpts := xy bWS " h" (this.btnDims.h + this.btnMarY) def
-              
-              btnCtl := g.Add("Button",curOpts,btnText), btnCtl.GetPos(&x,&y,&w,&h), b := {x:x,y:y,w:w,h:h}
-              btnCtl.OnEvent("Click",this.mButtonPress)
-              def ? btnCtl.Focus() : ""
-          }
-      }
-      
-      If (this.helpText) ; add help button if specified
-          g.Add("Button","x+0 w" (this.helpDims.w + this.btnMarX) " h" (this.helpDims.h + this.btnMarY) " vhelp",this.helpText).OnEvent("Click",this.mButtonPress)
-      
-      If (this.parent) {
-          g.Opt("+Owner" this.parent)
-          If (this.modal)
-              WinSetEnabled 0, "ahk_id " this.parent
-      }
-      g.Show("hide"), this.gui := g, opt := ""
-      If this.parent
-          g.GetPos(&x,&y,&w,&h), d := {x:x, y:y, w:w, h:h}, x := this.pDims.Cx - (d.w//2), y := this.pDims.Cy - (d.h//2), opt := "x" x " y" y
-      g.Show((this.x and this.y) ? "x" this.x " y" this.y : opt)
-      
-      this.IH := InputHook("V") ; "V" for not blocking input
-      this.IH.KeyOpt("{BackSpace}{Escape}{Enter}{Space}{NumpadEnter}{F4}","N") ; not using all these keys, but we might later
-      this.IH.OnKeyDown := ObjBindMethod(this,"IHKeyDown")
-      this.testDlg.Destroy(), this.testDlg := "", this.IH.Start(), this.IH.Wait()
-  }
-  RightClick(wParam, lParam, msg, hwnd) {
-      If (hwnd = this.hwnd) {
-          x := lParam & 0xff, y := (lParam >> (A_PtrSize * 2)) & 0xff
-          cMenu := Menu.New(), cMenu.Add("Copy Message",this.mContextMenu), cMenu.Show()
-      }
-  }
-  CloseWin(wParam, lParam, msg, hwnd) {
-      If (hwnd = this.hwnd And wParam = 0xF060)
-          this.procResult(), this.hwnd := 0
-  }
-  ContextMenu(ItemName, ItemPos, Menu) {
-      clipboard := this.sMsg
-  }
-  ButtonPress(oCtl, info) {
-      If (oCtl.Name = "help" And (Type(this.helpCallback)!="String"))
-          cb := this.helpCallback, cb() ; help callback
-      Else
-          ctlClassNN := oCtl.ClassNN, ctlText := oCtl.Text, bR := [ctlText,ctlClassNN], this.procResult(bR) ; exit with btn clicked
-  }
-  IHKeyDown(iHook, VK, SC) {
-      curKey := Format("{:X}",VK)
-      If (WinActive("ahk_id " this.hwnd)) {
-          If (curKey = 73 And (GetKeyState("Alt") Or GetKeyState("Ctrl"))) ; ALT/CTL+F4
-              this.procResult()
-          Else If (VK = 27) ; ESC
-              this.procResult()
-      }
-  }
-  procResult(bR:="") {
-      bR := !bR ? ["",""] : bR, this.comboText := "", this.dropListText := ""
-      this.combo := 0, this.dropList := 0, this.editText := "", this.checkValue := 0
-      
-      If (this.ctrls.edit.hwnd)
-          ctl := GuiCtrlFromHwnd(this.ctrls.edit.hwnd),     this.editText := ctl.Value
-      If (this.ctrls.dropList.hwnd)
-          ctl := GuiCtrlFromHwnd(this.ctrls.dropList.hwnd), this.dropList := ctl.Value, this.dropListText := ctl.Text
-      If (this.ctrls.combo.hwnd)
-          ctl := GuiCtrlFromHwnd(this.ctrls.combo.hwnd),    this.combo := ctl.Value, this.comboText := ctl.Text
-      If (this.ctrls.check.hwnd)
-          ctl := GuiCtrlFromHwnd(this.ctrls.check.hwnd),    this.checkValue := ctl.Value
-      If (this.ctrls.list.hwnd)
-          ctl := GuiCtrlFromHwnd(this.ctrls.list.hwnd),     this.list := ctl.Value, this.listText := ctl.Text
-      this.buttonText := bR[1],   this.ClassNN := bR[2],    this.IH.Stop()
-      
-      If this.parent
-          WinActivate("ahk_id " this.parent) ; ALT+F4 seems to send parent to background
-      If this.modal
-          WinSetEnabled(1, "ahk_id " this.modal) ; re-enable parent if modal was used
-      
-      this.gui.Destroy()
-      Critical this.criticalValue
-  }
-  MonitorFromPoint(ix:="", iy:="") {
-      mcm := A_CoordModeMouse, selected := 0 ; save current mouse CoordMode, and init selected
-      CoordMode("Mouse", "Screen"), MouseGetPos(&x, &y), CoordMode("Mouse", mcm)
-      x := IsInteger(ix) ? ix : x, y := IsInteger(iy) ? iy : y
-      Loop MonitorGetCount() {
-          MonitorGet(A_Index,&mLeft,&mTop,&mRight,&mBottom)
-          selected := ((x >= mLeft) And (x <= mRight) And (y >= mTop) And (y <= mBottom)) ? A_Index : 0
-          If selected
-              break
-      }
-      return selected
-  }
+    maxWidth := 350, width := 0, Height := 0, x := "", y := ""          ; ===== user-adjustable properties
+    fontSize := 8, fontFace := "Verdana", txtColor := "Default", bgColor := "Default", btnMarXr := 3, btnMarYr := 1
+    btnList := 0, btnTextW := false, btnAlign := "right", help := "", helpText := "",  btnMarx := 0, btnMarY := 0
+    parent := 0, modal := 0, selectable := false, noCloseBtn := false, icon := "", margin := 0
+    
+    criticalValue := A_IsCritical ; thanks to robodesign for this       ; ===== support properties
+    minWidth := 150, btnCount := 0, btnDefault := 1, bMWd := 0, bMWc := 0, bMW := 0, scale := A_ScreenDPI / 96
+    
+    edit:="", editMsg:="", editBox:=false, editText:="",                ; ==== default control settings
+    check:="", checkMsg:="", checkMsgVal:=0, checkValue:="",   dropList:="", dropListMsg:="", dropListMsgVal:=1, dropListText:=""
+    combo:="", comboMsg:="", comboMsgVal:=1, comboText:="",    list:="", listText:="", listMsg:="", listVal:=1, listRows:=0, ClassNN := ""
+    
+    helpDims := {}, btnDims := {}, btnListW := [], curMon := 0, pDims := {} ; ==== suggested NO modificatin
+    totalWidth := 0, totalHeight := 0, ctlWidth := 0, adjHeight := 0, adjWidth := 0, sPadR := 1.25
+    charList := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", avg := "", testDlg := ""
+    helpCallback := ""
+    
+    __New(sMsg,title:="",options:="") {
+        Critical "off"
+        this.sMsg := sMsg, this.options := options, this.title := title, iconHt := 32 * this.scale
+        
+        mRightClick := ObjBindMethod(this,"RightClick") ; binding methods/events
+        OnMessage(0x204,mRightClick)
+        mCloseWin := ObjBindMethod(this,"CloseWin")
+        OnMessage(0x0112,mCloseWin)
+        this.mContextMenu := ObjBindMethod(this,"ContextMenu"), this.mButtonPress := ObjBindMethod(this,"ButtonPress")
+        
+        errMsg := "Invalid Option`r`n`r`nbtnList:0 >  OK`r`nbtnList:1 >  OK / Cancel`r`nbtnList:2 >  Abort / Retry / Ignore`r`n"
+        . "btnList:3 >  Yes / No / Cancel`r`nbtnList:4 >  Yes / No`r`nbtnList:5 >  Retry / Cancel`r`nbtnList:6 >  Cancel / Try Again / Continue`r`n`r`n"
+        . "Or`r`n`r`nbtnList:button text|button text|..."
+        
+        optArr := StrSplit(options,",")         ; parse user options and store
+        Loop optArr.Length {
+            If ((o := optArr[A_Index])="")
+                Continue
+            curOpt := SubStr(o,1,(sep:=InStr(o,":"))-1)
+            curVal := SubStr(o,sep+1)
+            this.%curOpt% := Trim(curVal,":")
+        }
+        
+        this.ProcControls() ; process user specified controls: edit, check, list, dropList, combo
+        
+        this.parent := this.modal ? this.modal : this.parent
+        this.avg := this.txtDims("Testing 1 2 3","avgDims")
+        this.btnMarX := this.btnMarX ? this.btnMarX : this.avg.w * this.btnMarXr
+        this.btnMarY := this.btnMarY ? this.btnMarY : this.avg.h * this.btnMarYr
+        
+        this.icon := this.PickIcon(this.icon), this.icon.h := iconHt, this.icon.w := iconHt
+        sPad := this.fontSize * this.sPadR, this.sPad := sPad   ; element spacing controlled ; w1.25 / h0.75
+        this.dlgMargin := (this.margin ? this.margin : 10)
+        this.selectable := this.height ? true : this.selectable
+        
+        pX := "", pY := "", pW := 0, pH := 0
+        If WinExist("ahk_id " this.parent)
+            WinGetPos &pX, &pY, &pW, &pH, "ahk_id " this.parent
+        this.curMon  := this.MonitorFromPoint(pX,pY), this.pDims := {Cx:(pX+(pW//2)), Cy:(pY+(pH//2))} ; use parent x/y/w/h to determine center point
+        this.btnDims := this.txtDims("Try Again","btnDims") ; default button dims / no padding
+        
+        this.btnList := this.ProcBtnList(this.btnList) ; === button list processing
+        If (this.btnList = "") { ; error, display msg and return
+            this.__Delete(errMsg)
+            return
+        }
+        
+        bMW := 0
+        Loop Parse this.btnList, "|" ; initial parsing of btnList
+        {
+            If (A_LoopField = "")
+                Continue
+            
+            btnText := RegExReplace(A_LoopField,"\[[\w]+\]$","")
+            btnProp := RegExReplace(A_LoopField,"^[^\[]+|\[|\]","")
+            this.btnDefault := (btnProp = "d") ? A_Index : this.btnDefault
+            btnDims := this.txtDims(btnText,"btn" A_Index)
+            
+            this.btnDims := (btnDims.w > this.btnDims.w) ? btnDims : this.btnDims ; record widest button
+            bMW += btnDims.w + this.btnMarX
+            this.btnListW.InsertAt(A_Index,btnDims.w)
+            
+            this.btnCount := A_Index, btnDims := ""
+        }
+        
+        this.bMWd := this.btnCount * (this.btnDims.w + this.btnMarX)    ; bMW default (all btns same width)
+        this.bMWc := bMW                                                ; bMW custom (btnTextW)
+        
+        this.helpDims := this.txtDims(this.helpText,"help"), hDims := this.helpDims.w + this.btnMarX ; add help btn dimensions
+        this.bMWd += (this.helpDims.w ? hDims : 0), this.bMWc += (this.helpDims.w ? hDims : 0)
+        this.bMW := this.btnTextW ? bMW : this.bMWd                     ; set final bMW
+        
+        this.MakeGui(1)
+    }
+    txtDims(str,ctlName,width:=0) {
+        If (str="")
+            return {x:0,y:0,w:0,h:0}
+        width := width ? " w" width : ""
+        If (this.testDlg = "" And ctlName = "avgDims") { ; get avg char w/h or add element to get dims
+            this.testDlg := Gui(), this.testDlg.SetFont("s" this.fontSize,this.fontFace) ; create dummy GUI, set font
+            this.testDlg.Add("text","xm vavgDims",this.charList), this.testDlg["avgDims"].GetPos(&x,&y,&w,&h) ; avg char w/h
+        } Else this.testDlg.Add("Text","xm v" ctlName width,str), this.testDlg[ctlName].GetPos(&x,&y,&w,&h) ; add element for x/y/w/h
+        return (ctlName = "avgDims") ? {h:h, w:(w//52)} : {x:x, y:y, w:w, h:h}
+    }
+    __Delete(msg := "") {
+        msg ? MsgBox(msg) : "" ; display msgbox if msg/error
+        this.gui := "", this.IH := "", this := "" ; release input hook, destroy GUI, etc...
+    }
+    ProcControls() { ; process user-specified controls
+        If this.check
+            a := StrSplit(this.check,":"), this.checkMsg := a[1], this.checkMsgVal := (a.Has(2) ? a[2] : 0), this.check := ""
+        If this.dropList
+            a := StrSplit(this.dropList,":"), this.dropListMsg := a[1], this.dropListMsgVal := (a.Has(2) ? a[2] : 0), this.dropList := ""
+        If this.edit
+            this.editMsg := ((this.edit="''") ? "" : this.edit), this.editBox := true, this.edit := ""
+        If this.combo
+            a := StrSplit(this.combo,":"), this.comboMsg := a[1], this.comboMsgVal := (a.Has(2) ? a[2] : 0), this.combo := ""
+        If this.list
+            a := StrSplit(this.list,":"), this.listMsg := a[1], this.listMsgVal := (a.Has(2) ? a[2] : 0), this.listRows := (a.Has(3) ? a[3] : 0)
+        If this.help
+            h := StrSplit(this.help,":"), this.helpCallback := (h.Has(2) ? h[2] : ""), this.helpText := h[1], h := ""
+    }
+    ProcBtnList(b) { ; process btnList as int (0-6) or as "text|text|text..."
+        If (Type(b) = "String") And StrLen(b)
+            return b
+        Else If IsInteger(b) And (b >= 0) And (b <= 6) {
+            btnList := (b=0) ? "OK" : (b=1) ? "OK|Cancel" : (b=4) ? "Yes|No" : (b=5) ? "Retry|Cancel" : ""
+            btnList := (b=2) ? "Abort|Retry|Ignore" : (b=3) ? "Yes|No|Cancel" : (b=6) ? "Cancel|Try Again|Continue" : ""
+        } Else If IsInteger(b) And ((b<0) Or (b>6))
+            btnList := ""
+        return btnList ; return of "" indicates error
+    }
+    PickIcon(iconFile) {
+        f := "imageres.dll/", t := iconFile ; f = file / t = icon type
+        r := (t = "error") ? "e" : (t = "question") ? "q" : (t = "warning") ? "w" : (t = "info") ? "i" : ""
+        iconFile := (r="e") ? f "94" : (r="q") ? f "95" : (r="w") ? f "80" : (r="i") ? f "77" : iconFile ; default icons
+        
+        iArr := StrSplit(iconFile,"/"), iconObj := {}
+        iconObj.file := iArr.Has(1) ? iArr[1] : ""
+        iconObj.num := iArr.Has(2) ? iArr[2] : "", iArr := ""
+        return iconObj
+    }
+    MakeGui(ver) {
+        edit:={hwnd:0}, dropList:={hwnd:0}, check:={hwnd:0}, msg:={hwnd:0}, combo:={hwnd:0}, list:={hwnd:0}
+        vScrollW := SysGet(2)
+        
+        If !this.width {
+            msg  := this.txtDims(this.sMsg,"msg",this.maxWidth), msg2 := this.txtDims(this.sMsg,"msg2")
+            msg := (msg.w > msg2.w) ? msg2 : msg        ; take the narrowest one - auto-sizing
+        } Else msg := this.txtDims(this.sMsg,"msg",this.width)  ; user specified width
+        this.ctlWidth := msg.w                                  ; set initial control width
+        
+        g := Gui("-DPIScale" (this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"),this.title)
+        g.MarginX := this.dlgMargin, g.MarginY := this.dlgMargin, this.hwnd := g.Hwnd
+        g.BackColor := this.bgColor, g.SetFont("s" this.fontSize,this.fontFace)
+        
+        If (this.icon.file) { ; this.dlgMargin for x and y = orig
+            iconOptions := "vicon xm ym h" this.icon.h " w-1" (this.icon.num ? " Icon" this.icon.num : "")
+            picCtl := g.Add("Picture",iconOptions,this.icon.file)
+            picCtl.GetPos(&x,&y,&w,&h), this.icon := {x:x,y:y,w:w,h:h,hwnd:picCtl.hwnd,num:this.icon.num,file:this.icon.file}
+        } ; x:=0 ??? for all?
+        
+        mX := (this.icon.file) ? "xm+" (this.icon.w + this.sPad) : "xm"     ; adjust x/y/w/h for sMsg
+        mY := (this.icon.file And msg.h < this.icon.h) ? " ym+" ((this.icon.h/2) - (msg.h/2)) : " ym"
+        mH := (!this.height) ? msg.h : this.height
+        mW := msg.w, mW += (this.selectable ? this.avg.w * 4 : 0)
+        this.ctlWidth := (this.ctlWidth > mW) ? this.ctlWidth : mW ; msg.w or (msg.w + vScrollW estimate)
+        
+        selOps := mX mY " h" mH " w" this.ctlWidth " +Background" this.bgColor " c" this.txtColor (this.selectable ? " ReadOnly" : "")
+        
+        If (this.selectable)
+            msgCtl := g.Add("Edit",selOps " vmsgEdit",""), msgCtl.Value := this.sMsg ; necessary when StrLen(sMsg) > 65535
+        Else msgCtl := g.Add("Text",selOps " vmsg",this.sMsg)
+        
+        msgCtl.GetPos(&x,&y,&w,&h), msg := {x:x,y:y,w:w,h:h,hwnd:msgCtl.hwnd} ; redefine msg dims
+        newY := (msg.h > this.icon.h) ? (this.dlgMargin + msg.h + this.sPad) : (this.dlgMargin + this.icon.h + this.sPad)
+        
+        if (this.listMsg) {
+            listDims := this.txtDims(StrReplace(this.listMsg,"|","`r`n"),"list"), listArr := StrSplit(this.listMsg,"|")
+            this.ctlWidth := ((addW:=listDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
+            
+            listRows := (listArr.Length > 10 And !this.listRows) ? 10 : this.listRows
+            listCtl := g.Add("Listbox","xp y" newY " w" this.ctlWidth " Choose" this.listMsgVal " r" listRows " vlist",listArr)
+            listCtl.GetPos(&x,&y,&w,&h), list := {x:x,y:y,w:w,h:h,hwnd:listCtl.hwnd}
+            newY += list.h + this.sPad, listCtl := ""
+        }
+        
+        if (this.editBox) {
+            editDims := this.txtDims(this.editMsg,"edit")
+            this.ctlWidth := ((addW:=editDims.w+vScrollW) > this.ctlWidth) ? addW : this.ctlWidth
+            
+            editCtl := g.Add("Edit","xp y" newY " w" this.ctlWidth " r1 vedit",this.editMsg)
+            editCtl.GetPos(&x,&y,&w,&h), edit := {x:x,y:y,w:w,h:h,hwnd:editCtl.hwnd}
+            newY += edit.h + this.sPad, editCtl := ""
+        }
+        
+        If (this.dropListMsg) {
+            dropListDims := this.txtDims(StrReplace(this.dropListMsg,"|","`r`n"),"dropList"), dropListArr := StrSplit(this.dropListMsg,"|")
+            this.ctlWidth := ((addW:=dropListDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
+            
+            dropListCtl := g.Add("DropDownList","xp y" newY " w" this.ctlWidth " Choose" this.dropListMsgVal " vdroplist",dropListArr)
+            dropListCtl.GetPos(&x,&y,&w,&h), dropList := {x:x,y:y,w:w,h:h,hwnd:dropListCtl.hwnd}
+            newY += dropList.h + this.sPad, dropListCtl := ""
+        }
+        
+        if (this.comboMsg) {
+            comboDims := this.txtDims(StrReplace(this.comboMsg,"|","`r`n"),"combo"), comboArr := StrSplit(this.comboMsg,"|")
+            this.ctlWidth := ((addW:=comboDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
+            
+            comboCtl := g.Add("ComboBox","xp y" newY " w" this.ctlWidth " Choose" this.comboMsgVal "vcombo",comboArr)
+            comboCtl.GetPos(&x,&y,&w,&h), combo := {x:x,y:y,w:w,h:h,hwnd:comboCtl.hwnd}
+            newY += combo.h + this.sPad, comboCtl := ""
+        }
+        
+        If (this.checkMsg) {
+            chkCtl := g.Add("Checkbox","xp y" newY " vcheck",this.checkMsg), chkCtl.Value := this.checkMsgVal
+            c := chkCtl.GetPos(&x,&y,&w,&h), check := {x:x,y:y,w:w,h:h,hwnd:chkCtl.hwnd}
+            
+            this.ctlWidth := (check.w > this.ctlWidth) ? check.w : this.ctlWidth
+            newY += check.h + this.sPad, chkCtl := ""
+        }
+        
+        widthTest := this.ctlWidth + (this.icon.file ? this.icon.w + this.sPad : 0) ; widest control + icon if enabled
+        this.ctlWidth := ((this.bMW > widthTest) ? (this.bMW - (this.icon.file ? this.icon.w + this.sPad : 0)) : this.ctlWidth) ; adjust for buttons if needed
+        
+        For ctlName, o in g
+            If (o.Name And o.Name != "msg" And o.Name != "icon") ; adjust control widths
+                o.Move(,,this.ctlWidth)
+        
+        this.totalWidth := this.ctlWidth + (this.dlgMargin*2) + (this.icon.file ? (this.icon.w + this.sPad) : 0)
+        this.ctrls := {msg:msg, edit:edit, dropList:dropList, check:check, combo:combo, list:list}
+        
+        If (this.btnAlign = "center")
+            btnX := (this.totalWidth) ? (this.totalWidth/2) - (this.bMW/2) : 0
+        Else If (this.btnAlign = "right")
+            btnX := (this.totalWidth) ? this.totalWidth - this.bMW - this.dlgMargin : 0
+        Else if (this.btnAlign = "left")
+            btnX := (this.totalWidth) ? this.dlgMargin : 0
+        
+        Loop Parse this.btnList, "|" ; list specified buttons
+        {
+            If (A_LoopField) { ; make sure button exists, helpful on zero-length string
+                btnText := RegExReplace(A_LoopField,"\[[\w]+\]$","") ; , btnProp := RegExReplace(A_LoopField,"^[^\[]+|\[|\]","")
+                
+                xy := (A_Index = 1) ? "x" (!IsSet(btnX) ? "m" : btnX) " y" newY : "x+0"
+                bWS := this.btnTextW ? " w" (this.btnListW[A_Index] + this.btnMarX) : " w" (this.btnDims.w + this.btnMarX)
+                def := (A_Index = this.btnDefault) ? " +Default" : ""
+                curOpts := xy bWS " h" (this.btnDims.h + this.btnMarY) def
+                
+                btnCtl := g.Add("Button",curOpts,btnText), btnCtl.GetPos(&x,&y,&w,&h), b := {x:x,y:y,w:w,h:h}
+                btnCtl.OnEvent("Click",this.mButtonPress)
+                def ? btnCtl.Focus() : ""
+            }
+        }
+        
+        If (this.helpText) ; add help button if specified
+            g.Add("Button","x+0 w" (this.helpDims.w + this.btnMarX) " h" (this.helpDims.h + this.btnMarY) " vhelp",this.helpText).OnEvent("Click",this.mButtonPress)
+        
+        If (this.parent) {
+            g.Opt("+Owner" this.parent)
+            If (this.modal)
+                WinSetEnabled 0, "ahk_id " this.parent
+        }
+        g.Show("hide"), this.gui := g, opt := ""
+        If this.parent
+            g.GetPos(&x,&y,&w,&h), d := {x:x, y:y, w:w, h:h}, x := this.pDims.Cx - (d.w//2), y := this.pDims.Cy - (d.h//2), opt := "x" x " y" y
+        g.Show((this.x and this.y) ? "x" this.x " y" this.y : opt)
+        
+        this.IH := InputHook("V") ; "V" for not blocking input
+        this.IH.KeyOpt("{BackSpace}{Escape}{Enter}{Space}{NumpadEnter}{F4}","N") ; not using all these keys, but we might later
+        this.IH.OnKeyDown := ObjBindMethod(this,"IHKeyDown")
+        this.testDlg.Destroy(), this.testDlg := "", this.IH.Start(), this.IH.Wait()
+    }
+    RightClick(wParam, lParam, msg, hwnd) {
+        If (hwnd = this.hwnd) {
+            x := lParam & 0xff, y := (lParam >> (A_PtrSize * 2)) & 0xff
+            cMenu := Menu.New(), cMenu.Add("Copy Message",this.mContextMenu), cMenu.Show()
+        }
+    }
+    CloseWin(wParam, lParam, msg, hwnd) {
+        If (hwnd = this.hwnd And wParam = 0xF060)
+            this.procResult(), this.hwnd := 0
+    }
+    ContextMenu(ItemName, ItemPos, Menu) {
+        clipboard := this.sMsg
+    }
+    ButtonPress(oCtl, info) {
+        If (oCtl.Name = "help" And (Type(this.helpCallback)!="String"))
+            cb := this.helpCallback, cb() ; help callback
+        Else
+            ctlClassNN := oCtl.ClassNN, ctlText := oCtl.Text, bR := [ctlText,ctlClassNN], this.procResult(bR) ; exit with btn clicked
+    }
+    IHKeyDown(iHook, VK, SC) {
+        curKey := Format("{:X}",VK)
+        If (WinActive("ahk_id " this.hwnd)) {
+            If (curKey = 73 And (GetKeyState("Alt") Or GetKeyState("Ctrl"))) ; ALT/CTL+F4
+                this.procResult()
+            Else If (VK = 27) ; ESC
+                this.procResult()
+        }
+    }
+    procResult(bR:="") {
+        bR := !bR ? ["",""] : bR, this.comboText := "", this.dropListText := ""
+        this.combo := 0, this.dropList := 0, this.editText := "", this.checkValue := 0
+        
+        If (this.ctrls.edit.hwnd)
+            ctl := GuiCtrlFromHwnd(this.ctrls.edit.hwnd),     this.editText := ctl.Value
+        If (this.ctrls.dropList.hwnd)
+            ctl := GuiCtrlFromHwnd(this.ctrls.dropList.hwnd), this.dropList := ctl.Value, this.dropListText := ctl.Text
+        If (this.ctrls.combo.hwnd)
+            ctl := GuiCtrlFromHwnd(this.ctrls.combo.hwnd),    this.combo := ctl.Value, this.comboText := ctl.Text
+        If (this.ctrls.check.hwnd)
+            ctl := GuiCtrlFromHwnd(this.ctrls.check.hwnd),    this.checkValue := ctl.Value
+        If (this.ctrls.list.hwnd)
+            ctl := GuiCtrlFromHwnd(this.ctrls.list.hwnd),     this.list := ctl.Value, this.listText := ctl.Text
+        this.buttonText := bR[1],   this.ClassNN := bR[2],    this.IH.Stop()
+        
+        If this.parent
+            WinActivate("ahk_id " this.parent) ; ALT+F4 seems to send parent to background
+        If this.modal
+            WinSetEnabled(1, "ahk_id " this.modal) ; re-enable parent if modal was used
+        
+        this.gui.Destroy()
+        Critical this.criticalValue
+    }
+    MonitorFromPoint(ix:="", iy:="") {
+        mcm := A_CoordModeMouse, selected := 0 ; save current mouse CoordMode, and init selected
+        CoordMode("Mouse", "Screen"), MouseGetPos(&x, &y), CoordMode("Mouse", mcm)
+        x := IsInteger(ix) ? ix : x, y := IsInteger(iy) ? iy : y
+        Loop MonitorGetCount() {
+            MonitorGet(A_Index,&mLeft,&mTop,&mRight,&mBottom)
+            selected := ((x >= mLeft) And (x <= mRight) And (y >= mTop) And (y <= mBottom)) ? A_Index : 0
+            If selected
+                break
+        }
+        return selected
+    }
 }

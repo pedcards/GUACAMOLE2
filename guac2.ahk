@@ -3,7 +3,8 @@
 */
 #Requires AutoHotkey v2.0
 SetWorkingDir(A_ScriptDir)
-; #Include "%A_ScriptDir%\Includes"
+#Include "%A_ScriptDir%\Includes"
+
 if WinExist("View Downloads - Windows Internet Explorer") {
 	WinClose
 }
@@ -11,7 +12,7 @@ if WinExist("View Downloads - Windows Internet Explorer") {
 
 ;	============ INCLUDES =================
 ; #Include xml.ahk
-; #Include StrX.ahk
+#Include strx2.ahk
 ; #Include Class_LV_Colors.ahk
 ; #Include sift3.ahk
 ; #Include CMsgBox.ahk

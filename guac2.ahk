@@ -24,8 +24,13 @@ Initialization:
 		chipdir := "\\childrens\files\HCChipotle\"									; and CHIPOTLE files
 		confStart := A_Now
 	}
-	epRead := readIni("epRead")
-	fc := readIni("forecast")
+	res := MsgBox("Are you launching GUACAMOLE for patient presentation?","GUACAMOLE",36)
+	if res="Yes"
+		isPresenter := true
+	else
+		isPresenter := false
+
+	firstRun := true
 }
 
 ; y := ComObject("Msxml2.DOMDocument.3.0")

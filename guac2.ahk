@@ -7,10 +7,6 @@ SetWorkingDir(A_ScriptDir)
 
 Initialization:
 {
-	if WinExist("View Downloads - Windows Internet Explorer") {
-		WinClose
-	}
-
 /*	Set environment and vars
 */
 	user := A_UserName

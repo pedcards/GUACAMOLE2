@@ -41,6 +41,16 @@ Initialization:
 
 	; RegCOM(".\Includes\dsoframer.manifest")
 }
+MainPart:
+{
+	MainGUI()																			; Draw the main GUI
+	if (firstRun) {
+		;~ SoundPlay, % chipDir "chillin.wav", Wait
+		; SplashImage, off
+		firstRun := false
+	}
+	; SetTimer, confTimer, 1000															; Update ConfTime every 1000 ms
+	; WinWaitClose, GUACAMOLE Main														; wait until main GUI is closed
 }
 
 ; y := ComObject("Msxml2.DOMDocument.3.0")

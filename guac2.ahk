@@ -27,6 +27,20 @@ Initialization:
 		isPresenter := false
 
 	firstRun := true
+	; SplashImage, % chipDir "guac.jpg", B2 
+
+	y := ComObject("Msxml2.DOMDocument")
+	y.load(chipdir "currlist.xml")														; Get latest local currlist into memory
+
+	arch := ComObject("Msxml2.DOMDocument")
+	arch.load(chipdir "archlist.xml")													; Get archive.xml
+
+	datedir := Map()
+	mo := ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+	screen := {guiW:1200,guiH:400,Width:A_ScreenWidth,Height:A_ScreenHeight}
+
+	; RegCOM(".\Includes\dsoframer.manifest")
+}
 }
 
 ; y := ComObject("Msxml2.DOMDocument.3.0")

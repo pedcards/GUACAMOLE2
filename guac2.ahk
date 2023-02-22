@@ -5,8 +5,7 @@
 SetWorkingDir(A_ScriptDir)
 #Include "%A_ScriptDir%\Includes"
 
-Initialization:
-{
+;#region == Initialization ==============================================================================
 /*	Set environment and vars
 */
 	user := A_UserName
@@ -40,28 +39,85 @@ Initialization:
 	screen := {guiW:1200,guiH:400,Width:A_ScreenWidth,Height:A_ScreenHeight}
 
 	; RegCOM(".\Includes\dsoframer.manifest")
-}
-MainPart:
-{
+;#endregion
+
+;#region == Main Loop ===================================================================================
 	MainGUI()																			; Draw the main GUI
 	if (firstRun) {
 		;~ SoundPlay, % chipDir "chillin.wav", Wait
 		; SplashImage, off
 		firstRun := false
 	}
-	; SetTimer, confTimer, 1000															; Update ConfTime every 1000 ms
+	SetTimer(confTimer, 1000)															; Update ConfTime every 1000 ms
 	; WinWaitClose, GUACAMOLE Main														; wait until main GUI is closed
-}
-
-; y := ComObject("Msxml2.DOMDocument.3.0")
-; y.load("devfiles\guac.xml")
-
-; k := y.selectNodes("/root/id")
-; MsgBox k.Length
 
 ExitApp
+;#endregion
 
+;#region == TIMERS ===============================================================================================
+confTimer() {
+	global isPresenter, confStart
+	tmp := FormatTime(A_now,"HH:mm:ss")													; Format the current time
+	; GuiControl, mainUI:Text, CTime, % tmp												; Update the main GUI current time
+	
+	if (isPresenter) {																	; For presenter only,
+		tt := elapsed(confStart,A_Now)													; Total time elapsed
+		; GuiControl, mainUI:Text, CDur, % tt.HHMMSS									; Update the main GUI elapsed time
+	}
+	Return
+}
 
+elapsed(start,end) {
+	tdiff := formatSec(DateDiff(end,start,"Seconds"))
+	return tdiff
+}
+
+formatSec(secs) {
+	HH := zDigit(floor(secs/3600))														; Derive HH from total time (secs)
+	MM := zDigit(floor((secs-HH*3600)/60))												; Derive MM from remainder of HH
+	SS := zDigit(secs-HH*3600-MM*60)													; Derive SS from remainder of MM
+	Return {hh:HH, mm:MM, ss:SS
+		, HHMMSS:HH ":" MM ":" SS
+		, HHMM:HH ":" MM
+		, MMSS:MM ":" SS}
+}
+;#endregion  ============================================================================================
+
+;#region == MAIN GUI ===============================================================================================
+MainGUI()
+{
+	global confDate, isDevt
+
+	if !IsObject(confDate) {
+		if (isDevt) {
+			confDate := GetConfDate("20220614")										; use test dir. change this if want "live" handling
+		} else {
+			confDate := GetConfDate()												; determine next conference date into array dt
+		}
+	}
+	GetConfDir()																	; find confList, confXls, gXml
+
+	; Gui, mainUI:Default
+	; Gui, Destroy
+	; Gui, Font, s16 wBold
+	; Gui, Add, Text, y26 x20 vCTime, % "              "								; Conference real time
+	; Gui, Add, Text, % "y26 x" winDim.gw-100 " vCDur", % "              "			; Conference duration (only exists for Presenter)
+	; Gui, Add, Text, % "y0 x0 w" winDim.gw " h20 +Center", .-= GUACAMOLE =-.
+	; Gui, Font, wNorm s8 wItalic
+	; Gui, Add, Text, yp+30 xp wp +Center, General Use Access for Conference Archive
+	; Gui, Add, Text, yp+14 xp wp +Center, Merged OnLine Elements
+	; Gui, Add, Text, y10 x54, Time
+	; Gui, Add, Text, % "y10 x" winDim.gw-72, Duration
+	; Gui, Font, wBold
+	; Gui, Font, wNorm
+	; makeConfLV()																	; Draw the pateint grid ListView
+	; Gui, Add, Button, wp +Center gDateGUI, % confDate.MDY							; Date selector button
+	; Gui, Show, AutoSize, % "GUACAMOLE Main - " confDate.MDY							; Show GUI with seleted conference DT
+	Return
+}
+;#endregion  ============================================================================================
+
+;#region == FORMATTING =====================================================================================
 readIni(section) {
 /*	Reads a set of variables
 
@@ -136,6 +192,33 @@ readIni(section) {
 	}
 	return i_res
 }
+
+zDigit(x) {
+; Returns 2 digit number with leading 0
+	return SubStr("00" x, -2)
+}
+
+ObjHasValue(aObj, aValue, rx:="") {
+	for key, val in aObj
+		if (rx="RX") {																	; argument 3 is "RX" 
+			if (aValue="") {															; null aValue in "RX" is error
+				return false
+			}
+			if (val ~= aValue) {														; val=text, aValue=RX
+				return key
+			}
+			if (aValue ~= val) {														; aValue=text, val=RX
+				return key
+			}
+		} else {
+			if (val = aValue) {															; otherwise just string match
+				return key
+			}
+		}
+	return false																		; fails match, return err
+}
+
+;#endregion
 
 ; ============ INCLUDES =================
 ; #Include xml.ahk

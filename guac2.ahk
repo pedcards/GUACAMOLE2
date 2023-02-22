@@ -12,12 +12,12 @@ Initialization:
 	user := A_UserName
 	isDevt := InStr(A_WorkingDir,"AhkProjects")
 	if (isDevt) {
-		netdir := A_WorkingDir "\devfiles\Tuesday_Conference"						; local files
+		netdir := A_WorkingDir "\devfiles\Tuesday_Conference"							; local files
 		chipdir := A_WorkingDir "\devfiles\CHIPOTLE\"
 		confStart := "20220614140000"
 	} else {
-		netdir := "\\childrens\files\HCConference\Tuesday_Conference"				; networked Conference folder
-		chipdir := "\\childrens\files\HCChipotle\"									; and CHIPOTLE files
+		netdir := "\\childrens\files\HCConference\Tuesday_Conference"					; networked Conference folder
+		chipdir := "\\childrens\files\HCChipotle\"										; and CHIPOTLE files
 		confStart := A_Now
 	}
 	res := MsgBox("Are you launching GUACAMOLE for patient presentation?","GUACAMOLE",36)

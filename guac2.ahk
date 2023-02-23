@@ -93,14 +93,14 @@ MainGUI()
 {
 	global confDate, isDevt
 
-	if !IsObject(confDate) {
+	if !IsSet(confDate) {
 		if (isDevt) {
-			confDate := GetConfDate("20220614")										; use test dir. change this if want "live" handling
+			confDate := GetConfDate("20220614")											; use test dir. change this if want "live" handling
 		} else {
-			confDate := GetConfDate()												; determine next conference date into array dt
+			confDate := GetConfDate()													; determine next conference date into array dt
 		}
 	}
-	GetConfDir()																	; find confList, confXls, gXml
+	GetConfDir(confDate)																; find confList, confXls, gXml
 
 	; Gui, mainUI:Default
 	; Gui, Destroy

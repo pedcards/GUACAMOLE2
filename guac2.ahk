@@ -122,6 +122,20 @@ MainGUI()
 }
 ;#endregion  ============================================================================================
 
+;#region == CONFERENCE DIRECTORIES ======================================================================
+GetConfDate(dt:=A_Now) {
+; Get next conference date. If not argument, assume today
+	Wday := FormatTime(dt,"WDay")														; Today's day of the week (Sun=1)
+	if (Wday > 3) {																		; if Wed-Sat, next Tue
+		t2 := DateAdd(dt,10-Wday,"Days")
+	} else {																			; if Sun-Tue, this Tue
+		t2 := DateAdd(dt,3-Wday,"Days")
+	}
+	conf := ParseDate(dt)
+	return {YYYY:conf.YYYY, MM:conf.MM, MMM:conf.MMM, DD:conf.DD
+		, YMD:conf.YMD, MDY:conf.MDY}
+}
+
 ;#region == FORMATTING =====================================================================================
 readIni(section) {
 /*	Reads a set of variables

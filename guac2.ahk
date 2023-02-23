@@ -36,7 +36,11 @@ SetWorkingDir(A_ScriptDir)
 	arch.load(chipdir "archlist.xml")													; Get archive.xml
 
 	datedir := Map()
+	datedir.Default := Map()
 	mo := ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+	confList := Map()
+
 	screen := {guiW:1200,guiH:400,Width:A_ScreenWidth,Height:A_ScreenHeight}
 
 	; RegCOM(".\Includes\dsoframer.manifest")

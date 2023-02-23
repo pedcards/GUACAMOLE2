@@ -4,6 +4,7 @@
 #Requires AutoHotkey v2.0
 SetWorkingDir(A_ScriptDir)
 #Include "%A_ScriptDir%\Includes"
+#Warn VarUnset, OutputDebug
 
 ;#region == Initialization ==============================================================================
 /*	Set environment and vars

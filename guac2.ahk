@@ -136,6 +136,142 @@ GetConfDate(dt:=A_Now) {
 		, YMD:conf.YMD, MDY:conf.MDY}
 }
 
+GetConfDir(confDate) {
+/*	Find conference folder path for confDate
+	Get list of patient folders, push to confList, save in guac.xml
+*/
+	global confList, confXls, firstRun, gXml, confDir
+
+	confDir := NetConfDir(confDate.YYYY,confDate.mmm,confDate.dd)						; get path to conference folder based on predicted date "confDate"
+	SetWorkingDir(netdir "\" confDir)
+	; if !IsObject(confList) {															; make sure confList array exists
+	; 	confList := {}
+	; }
+	If FileExist("guac.xml")
+	{
+		gXml := ComObject("Msxml2.DOMDocument")
+		gXml.load("guac.xml")															; Open existing guac.xml
+	} else {
+		gXml := ComObject("Msxml2.DOMDocument")
+		gXml.loadXML("<root/>")															; Create new blank guac.xml if it doesn't exist
+		gXml.save("guac.xml")
+	}
+	filelist := ""																		; Clear out filelist string
+	patnum := ""																		; and zero out count of patient folders
+	
+	; Progress,,,Reading conference directory
+	Loop Files ".\*", "DF"																; Loop through all files and directories in confDir
+	{
+		tmpNm := A_LoopFileName
+		tmpExt := A_LoopFileExt
+		if (tmpNm ~= "i)Fast.Track|-FT|\sFT")											; exclude Fast Track files and folders
+			continue
+		if (tmpExt) {																	; evaluate files with extensions
+			if (tmpNm ~= "i)(\~\$|(Fast.Track|-FT|\sFT))")								; exclude temp and "Fast Track" files
+				continue
+			if (tmpNm ~= "i)(PCC)?.*\d{1,2}\.\d{1,2}\.\d{2,4}.*xls") {					; find XLS that matches PCC 3.29.16.xlsx
+				confXls := tmpNm
+			}
+			continue
+		}
+		tmpNm := RegExReplace(tmpNm,"\'","_")
+		if !(confList.Has(tmpNm)) {														; confList is empty
+			tmpNmUP := RegExReplace(format("{:U}",tmpNm),"\'","_")						; place filename in all UPPER CASE
+			confList[tmpNmUP] := {name:tmpNm,done:0,note:""}							; name=actual filename, done=no, note=cleared
+		}
+		tmpPath := "/root/id[@name='" tmpNmUP "']"
+		if !IsObject(gXml.selectSingleNode(tmpPath)) {
+			e := gXml.createElement("id")
+			e.setAttribute("name",tmpNmUP)
+			gXml.appendChild(e)
+			; gXml.addElement("id","root",{name: tmpNmUP})					; Add to Guac XML if not present
+		}
+	}
+	; if (confXls) {															; Read confXls if present
+	; 	Progress, % (firstRun)?"off":"",,Reading XLS file
+	; 	readXls()
+	; }
+	; gXml.save("guac.xml")													; Write Guac XML
+	; Return
+}
+
+makeConfLV() {
+	; global confList, winDim, gXml, mainUI
+
+	; Gui, mainUI:Default
+	; Gui, Font, s16
+	; Gui, Add, ListView, % "r" confList.length()+1 " x20 w" windim.gw-20
+	; 	. " Hdr AltSubmit Grid BackgroundSilver NoSortHdr NoSort gPatDir"
+	; 	, Name|Done|Takt|Diagnosis|Note
+	; Progress, % (firstRun)?"off":"",,Rendering conference list
+	; for key,val in confList
+	; {
+	; 	if (key=A_index) {
+	; 		keyNm := confList[key]											; UPPER CASE name
+	; 		keyElement := "/root/id[@name='" keyNm "']"
+	; 		keyDx := (tmp:=gXml.selectSingleNode(keyElement "/diagnosis").text) ? tmp : ""	; DIAGNOSIS, if present
+	; 		keyDone := gXml.getAtt(keyElement,"done")						; DONE flag
+	; 		keyDur := (tmp:=gXml.getAtt(keyElement,"dur")) ? formatSec(tmp) : ""	; If dur exists, get it
+	; 		keyNote := (tmp:=gXml.selectSingleNode(keyElement "/notes").text) ? tmp : ""	; NOTE, if present
+	; 		LV_Add(""
+	; 			,keyNm														; UPPER CASE name
+	; 			,(keyDone) ? "x" : ""										; DONE or not
+	; 			,(keyDur) ? keyDur.MM ":" keyDur.SS : ""					; total DUR spent on this patient MM:SS
+	; 			,(keyDx) ? keyDx : ""										; Diagnosis
+	; 			,(keyNote) ? keyNote : "")									; note for this patient
+	; 	}
+	; }
+	; Progress, Off
+	; LV_ModifyCol()
+	; LV_ModifyCol(1,"200")
+	; LV_ModifyCol(2,"AutoHdr Center")
+	; LV_ModifyCol(3,"AutoHdr Center")
+	; LV_ModifyCol(4,"AutoHdr")
+	; LV_ModifyCol(5,"AutoHdr")
+	; Return
+}
+
+NetConfDir(yyyy:="",mmm:="",dd:="") {
+	global netdir, datedir, mo
+
+	
+	if (datedir[yyyy].Has(mmm)) {														; YYYY\MMM already exists
+		return yyyy "\" datedir[yyyy,mmm].dir "\" datedir[yyyy,mmm,dd]					; return the string for YYYY\MMM
+	}
+	if !(datedir.Has(yyyy)) {
+		datedir[yyyy] := Map()
+	}
+	Loop Files netdir "\" yyyy "\*", "D"												; Get the month dirs in YYYY
+	{
+		file := A_LoopFileName
+		for key,obj in mo																; Compare "file" name with Mo abbrevs
+		{
+			if (instr(file,obj)) {														; mo MMM abbrev is in A_loopfilename
+				datedir[yyyy][obj] := Map()
+				datedir[yyyy][obj].dir := file 											; insert wonky name as yr[yyyy,mmm,{dir:filename}]
+			}
+		}
+	}
+	Loop Files netdir "\" yyyy "\" datedir[yyyy][mmm].dir "\*" , "D"					; check for conf dates within that month (dir:filename)
+	{
+		file := A_LoopFileName
+		if (regexmatch(file,"\d{1,2}\.\d{1,2}\.\d{1,2}")) {								; sometimes named "6.19.15"
+			d0 := zdigit(strX(file,".",1,1,".",1,1))
+			datedir[yyyy][mmm][d0] := file
+		} else if (RegExMatch(file,"\w\s\d{1,2}")){										; sometimes named "Jun 19" or "June 19"
+			d0 := zdigit(strX(file," ",1,1,"",1,0))
+			datedir[yyyy][mmm][d0] := file
+		} else if (regexmatch(file,"\b\d{1,2}\b")) {									; sometimes just named "19"
+			d0 := zdigit(file)
+			datedir[yyyy][mmm][d0] := file
+		}																				; inserts dir name into datedir[yyyy,mmm,dd]
+	}
+	return yyyy "\" datedir[yyyy][mmm].dir "\" datedir[yyyy][mmm][dd]						; returns path to that date's conference 
+}
+
+	
+;#endregion
+
 ;#region == FORMATTING =====================================================================================
 readIni(section) {
 /*	Reads a set of variables

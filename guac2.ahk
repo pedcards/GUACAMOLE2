@@ -353,6 +353,15 @@ zDigit(x) {
 	return SubStr("00" x, -2)
 }
 
+strQ(var1,txt,null:="") {
+/*	Print Query - Returns text based on presence of var
+	var1	= var to query
+	txt		= text to return with ### on spot to insert var1 if present
+	null	= text to return if var1="", defaults to ""
+*/
+	return (var1="") ? null : RegExReplace(txt,"###",var1)
+}
+
 ObjHasValue(aObj, aValue, rx:="") {
 	for key, val in aObj
 		if (rx="RX") {																	; argument 3 is "RX" 

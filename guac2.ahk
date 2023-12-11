@@ -176,12 +176,12 @@ GetConfDir(confDate) {
 			xml.addElement(gXml.selectSingleNode("root"),"id","@name=" tmpNmUP)			; Add to Guac XML if not present
 		}
 	}
-	; if (confXls) {															; Read confXls if present
-	; 	Progress, % (firstRun)?"off":"",,Reading XLS file
-	; 	readXls()
-	; }
-	; gXml.save("guac.xml")													; Write Guac XML
-	; Return
+	if (confXls) {																		; Read confXls if present
+		; Progress, % (firstRun)?"off":"",,Reading XLS file
+		readXls()
+	}
+	gXml.save("guac.xml")																; Write Guac XML
+	Return
 }
 
 makeConfLV() {

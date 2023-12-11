@@ -172,11 +172,8 @@ GetConfDir(confDate) {
 			confList[tmpNmUP] := {name:tmpNm,done:0,note:""}							; name=actual filename, done=no, note=cleared
 		}
 		tmpPath := "/root/id[@name='" tmpNmUP "']"
-		if !IsObject(gXml.selectSingleNode(tmpPath)) {
-			e := gXml.createElement("id")
-			e.setAttribute("name",tmpNmUP)
-			gXml.appendChild(e)
-			; gXml.addElement("id","root",{name: tmpNmUP})					; Add to Guac XML if not present
+		if !IsObject(tmpE := gXml.selectSingleNode(tmpPath)) {
+			xml.addElement(gXml.selectSingleNode("root"),"id","@name=" tmpNmUP)			; Add to Guac XML if not present
 		}
 	}
 	; if (confXls) {															; Read confXls if present

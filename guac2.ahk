@@ -138,13 +138,11 @@ GetConfDir(confDate) {
 	SetWorkingDir(netdir "\" confDir)
 	; if !IsObject(confList) {															; make sure confList array exists
 	; 	confList := {}
-	; }
+	gXml := ComObject("Msxml2.DOMDocument.6.0")
 	If FileExist("guac.xml")
 	{
-		gXml := ComObject("Msxml2.DOMDocument")
 		gXml.load("guac.xml")															; Open existing guac.xml
 	} else {
-		gXml := ComObject("Msxml2.DOMDocument")
 		gXml.loadXML("<root/>")															; Create new blank guac.xml if it doesn't exist
 		gXml.save("guac.xml")
 	}

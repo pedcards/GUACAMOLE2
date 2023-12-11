@@ -139,7 +139,7 @@ GetConfDir(confDate) {
 	; if !IsObject(confList) {															; make sure confList array exists
 	; 	confList := {}
 	; }
-	
+
 	gXml := ComObject("Msxml2.DOMDocument.6.0")
 	If FileExist("guac.xml")
 	{
@@ -255,7 +255,95 @@ NetConfDir(yyyy:="",mmm:="",dd:="") {
 			datedir[yyyy][mmm][d0] := file
 		}																				; inserts dir name into datedir[yyyy,mmm,dd]
 	}
-	return yyyy "\" datedir[yyyy][mmm].dir "\" datedir[yyyy][mmm][dd]						; returns path to that date's conference 
+	return yyyy "\" datedir[yyyy][mmm].dir "\" datedir[yyyy][mmm][dd]					; returns path to that date's conference 
+}
+
+ReadXls() {
+	global gXml, confXls
+
+	if IsObject(tmpXml:=gXml.selectSingleNode("/root/done")) {							; last time ReadXLS run
+		tmpXml := tmpXml.text
+	}
+	tmpXls:=FileGetTime(confXls)														; get XLS modified time
+	if (DateDiff(tmpXml,tmpXls,"Seconds") < 0) {											; Compare XLS-XML time diff
+		return
+	}
+	; FileCopy % confXls, guac.xlsx, 1								; Create a copy of the active XLS file 
+	; oWorkbook := ComObjGet(netDir "\" confDir "\guac.xlsx")			; Open the copy in memory (this is a one-way street)
+	; colArr := ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q"] ;array of column letters
+	; xls_hdr := Object()
+	; xls_cel := Object()
+	; Loop 
+	; {
+	; 	RowNum := A_Index																; Loop through rows in RowNum
+	; 	chk := oWorkbook.Sheets(1).Range("A" RowNum).value								; Get value in first column (e.g. A1..A10)
+	; 	if (RowNum=1) {																	; First row is just last file update
+	; 		upDate := chk
+	; 		continue
+	; 	}
+	; 	if !(chk)																		; if empty, then end of file or bad file
+	; 		break
+	; 	Loop
+	; 	{	
+	; 		ColNum := A_Index															; Iterate through columns
+	; 		if (colnum>maxcol)															; Extend maxcol (largest col) when we have passed the old max
+	; 			maxcol:=colnum
+	; 		cel := oWorkbook.Sheets(1).Range(colArr[ColNum] RowNum).value				; Get value of colNum rowNum (e.g. C4)
+	; 		if ((cel="") && (colnum=maxcol))											; Find max column
+	; 			break
+	; 		if (rownum=2) {																; Row 2 is headers
+	; 			; Patient name / MRN / Cardiologist / Diagnosis / conference prep / scheduling notes / presented / deferred / imaging needed / ICU LOS / Total LOS / Surgeons / time
+	; 			if instr(cel,"Patient name") {											; Fix some header names
+	; 				cel:="Name"
+	; 			}
+	; 			if instr(cel,"Conference prep") {
+	; 				cel:="Prep"
+	; 			}
+	; 			if instr(cel,"scheduling notes") {
+	; 				cel:="Notes"
+	; 			}
+	; 			if instr(cel,"imaging needed") {
+	; 				cel:="Imaging"
+	; 			}
+	; 			xls_hdr[ColNum] := trim(cel)											; Add cel to headers xls_hdr[]
+	; 		} else {
+	; 			xls_cel[ColNum] := cel													; Otherwise add value to xls_cel[]
+	; 		}
+	; 	}
+	; 	xls_mrn := Round(xls_cel[ObjHasValue(xls_hdr,"MRN")])							; Get value in xls_hdr MRN column 
+	; 	xls_name := xls_cel[ObjHasValue(xls_hdr,"Name")]								; Get name from xls_hdr Name column
+	; 	if !(xls_mrn)																	; Empty MRN, move on
+	; 		continue
+	; 	xls_nameL := RegExReplace(strX(xls_name,"",1,1,",",1,1),"\'","_")
+	; 	StringUpper, xls_nameUP, xls_nameL												; Name in upper case
+	; 	xls_id := "/root/id[@name='" xls_nameUP "']"									; Element string for id[@name]
+		
+	; 	if !IsObject(gXml.selectSingleNode(xls_id)) {									; Add new element if not present
+	; 		gXml.addElement("id","root",{name:xls_nameUP})
+	; 	}
+	; 	gXml.setAtt(xls_id,{mrn:xls_mrn})
+	; 	if !IsObject(gXml.selectSingleNode(xls_id "/name_full")) {						; Add full name if not present
+	; 		gXml.addElement("name_full",xls_id,xls_name)
+	; 	}
+	; 	if !IsObject(gXml.selectSingleNode(xls_id "/diagnosis")) {
+	; 		gXml.addElement("diagnosis",xls_id,xls_cel[ObjHasValue(xls_hdr,"Diagnosis")]) ; Add diagnostics and Diagnosis
+	; 	}
+	; 	if !IsObject(gXml.selectSingleNode(xls_id "/prep")) {
+	; 		gXml.addElement("prep",xls_id,xls_cel[ObjHasValue(xls_hdr,"Prep")])
+	; 	}
+	; 	if !IsObject(gXml.selectSingleNode(xls_id "/notes")) {
+	; 		gXml.addElement("notes",xls_id,xls_cel[ObjHasValue(xls_hdr,"Notes")])
+	; 	}
+	; }
+	; if !IsObject(gXml.selectSingleNode("/root/done")) {
+	; 	gXml.addElement("done","/root",A_Now)											; Add <done> element when has been scanned to prevent future scans
+	; } else {
+	; 	gXml.setText("/root/done",A_now)												; Set <done> value to now
+	; }
+	; oExcel := oWorkbook.Application														; close workbook
+	; oExcel.DisplayAlerts := false
+	; oExcel.quit
+	; Return
 }
 
 	

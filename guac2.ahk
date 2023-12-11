@@ -29,12 +29,6 @@ SetWorkingDir(A_ScriptDir)
 	firstRun := true
 	; SplashImage, % chipDir "guac.jpg", B2 
 
-	y := ComObject("Msxml2.DOMDocument")
-	y.load(chipdir "currlist.xml")														; Get latest local currlist into memory
-
-	arch := ComObject("Msxml2.DOMDocument")
-	arch.load(chipdir "archlist.xml")													; Get archive.xml
-
 	datedir := Map()
 	datedir.Default := Map()
 	mo := ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]

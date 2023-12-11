@@ -48,7 +48,7 @@ SetWorkingDir(A_ScriptDir)
 	SetTimer(confTimer, 1000)															; Update ConfTime every 1000 ms
 	; WinWaitClose, GUACAMOLE Main														; wait until main GUI is closed
 
-ExitApp
+ExitApp()
 ;#endregion
 
 ;#region == TIMERS ===============================================================================================

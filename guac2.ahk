@@ -30,6 +30,7 @@ SetWorkingDir(A_ScriptDir)
 	datedir := Map()
 	datedir.Default := Map()
 	mo := ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+	winDim := {gw:1200,gh:400,scrX:A_ScreenWidth,scrY:A_ScreenHeight}
 
 	confList := Map()
 
@@ -83,7 +84,7 @@ formatSec(secs) {
 ;#region == MAIN GUI ===============================================================================================
 MainGUI()
 {
-	global confDate, isDevt
+	global confDate, isDevt, winDim
 
 	if !IsSet(confDate) {
 		if (isDevt) {
@@ -94,22 +95,24 @@ MainGUI()
 	}
 	GetConfDir(confDate)																; find confList, confXls, gXml
 
-	; Gui, mainUI:Default
-	; Gui, Destroy
-	; Gui, Font, s16 wBold
-	; Gui, Add, Text, y26 x20 vCTime, % "              "								; Conference real time
-	; Gui, Add, Text, % "y26 x" winDim.gw-100 " vCDur", % "              "			; Conference duration (only exists for Presenter)
-	; Gui, Add, Text, % "y0 x0 w" winDim.gw " h20 +Center", .-= GUACAMOLE =-.
-	; Gui, Font, wNorm s8 wItalic
-	; Gui, Add, Text, yp+30 xp wp +Center, General Use Access for Conference Archive
-	; Gui, Add, Text, yp+14 xp wp +Center, Merged OnLine Elements
-	; Gui, Add, Text, y10 x54, Time
-	; Gui, Add, Text, % "y10 x" winDim.gw-72, Duration
-	; Gui, Font, wBold
-	; Gui, Font, wNorm
-	; makeConfLV()																	; Draw the pateint grid ListView
-	; Gui, Add, Button, wp +Center gDateGUI, % confDate.MDY							; Date selector button
-	; Gui, Show, AutoSize, % "GUACAMOLE Main - " confDate.MDY							; Show GUI with seleted conference DT
+	mainUI := Gui("","GUACAMOLE Main - " confDate.MDY)
+	mainUI.SetFont("s16 Bold")
+	mainUI.Add("Text","y26 x20 vCTime","              ")								; Conference real time
+	mainUI.Add("Text","y26 x" winDim.gw-100 " vCDur","              ")					; Conference duration (only exists for Presenter)
+	mainUI.Add("Text","y0 x0 w" winDim.gw " h20 +Center",".-= GUACAMOLE =-.")
+	mainUI.SetFont("s8 Norm Italic")
+	mainUI.Add("Text","yp+30 xp wp +Center","General Use Access for Conference Archive")
+	mainUI.Add("Text","yp+14 xp wp +Center","Merged OnLine Elements")
+	mainUI.Add("Text","y10 x54","Time")
+	mainUI.Add("Text","y10 x" winDim.gw-72,"Duration")
+	mainUI.SetFont("Norm")
+	makeConfLV()		<==														; Draw the patient grid ListView
+	mainDateBtn := mainUI.Add("Button","wp +Center ", confDate.MDY)						; Date selector button
+	mainDateBtn.OnEvent("Click",DateGUI)  <==
+	mainUI.Show("AutoSize")
+
+
+	
 	Return
 }
 ;#endregion  ============================================================================================

@@ -173,7 +173,7 @@ GetConfDir(confDate) {
 		}
 		tmpPath := "/root/id[@name='" tmpNmUP "']"
 		if !IsObject(tmpE := gXml.selectSingleNode(tmpPath)) {
-			xml.addElement(gXml.selectSingleNode("root"),"id","@name=" tmpNmUP)			; Add to Guac XML if not present
+			xml.addElement(gXml.selectSingleNode("root"),"id",{name:tmpNmUP})			; Add to Guac XML if not present
 		}
 	}
 	if (confXls) {																		; Read confXls if present
@@ -223,7 +223,6 @@ makeConfLV() {
 NetConfDir(yyyy:="",mmm:="",dd:="") {
 	global netdir, datedir, mo
 
-	
 	if (datedir[yyyy].Has(mmm)) {														; YYYY\MMM already exists
 		return yyyy "\" datedir[yyyy,mmm].dir "\" datedir[yyyy,mmm,dd]					; return the string for YYYY\MMM
 	}
@@ -265,7 +264,7 @@ ReadXls() {
 		tmpXml := tmpXml.text
 	}
 	tmpXls:=FileGetTime(confXls)														; get XLS modified time
-	if (DateDiff(tmpXml,tmpXls,"Seconds") < 0) {											; Compare XLS-XML time diff
+	if (DateDiff(tmpXls,tmpXml,"Seconds") < 0) {										; Compare XLS-XML time diff
 		return
 	}
 	; FileCopy % confXls, guac.xlsx, 1								; Create a copy of the active XLS file 

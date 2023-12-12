@@ -47,7 +47,7 @@ SetWorkingDir(A_ScriptDir)
 		firstRun := false
 	}
 	SetTimer(confTimer, 1000)															; Update ConfTime every 1000 ms
-	; WinWaitClose, GUACAMOLE Main														; wait until main GUI is closed
+	WinWaitClose("GUACAMOLE Main")														; wait until main GUI is closed
 
 ExitApp()
 ;#endregion
@@ -116,12 +116,10 @@ MainGUI()
 
 DateGUI(*) {
 	global confDate
-	dateGUI := Gui("AlwaysOnTop","Select PCC date...")
-	dateGUI.Add("MonthCal","vEncDt",confDate.YMD)
-	dateGUI.OnEvent("Change",DateChoose)
+	dateGUI := Gui("AlwaysOnTop -MaximizeBox -MinimizeBox","Select PCC date...")
+	dateGUI.Add("MonthCal","vEncDt",confDate.YMD)										; Show selected date and month selector
 	dateGUI.Show("AutoSize")
-	; Gui, Add, MonthCal, vEncDt gDateChoose, % dt.YYYY dt.MM dt.DD					; Show selected date and month selector
-	; Gui, Show, AutoSize, Select PCC date...
+	; dateGUI.OnEvent("Change",DateChoose)
 	return
 }
 

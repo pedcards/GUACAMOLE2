@@ -115,15 +115,26 @@ MainGUI()
 }
 
 DateGUI(*) {
+/*	modified from https://www.autohotkey.com/boards/viewtopic.php?f=82&t=67841&p=299272&hilit=monthcal#p534601
+*/
 	global confDate
 	dateGUI := Gui("AlwaysOnTop -MaximizeBox -MinimizeBox","Select PCC date...")
-	dateGUI.Add("MonthCal","vEncDt",confDate.YMD)										; Show selected date and month selector
+	dateGUI.Add("MonthCal","v_selectedDT",confDate.YMD).OnEvent("Change",f_updateDT)	; Show selected date and month selector
+	; dateGUI.OnEvent("Escape",f_submitDT)
+	dateSubmit := dateGUI.Add("Button","Center","Jump to date")
+	dateSubmit.OnEvent("Click",f_submitDT)
 	dateGUI.Show("AutoSize")
-	; dateGUI.OnEvent("Change",DateChoose)
+	WinWaitClose("Select PCC date")
+	enc := s_updatedDT
 	return
-}
 
-DateChoose(*) {
+	f_updateDT(s_selectedDT,*) {
+		s_updatedDT := s_selectedDT.value
+	}
+	f_submitDT(*) {
+		dateGUI.Destroy()
+	}
+
 	; Gui, date:Destroy																; Close MonthCal UI
 	; dt := GetConfDate(EncDt)														; Reacquire DT based on value
 	; conflist =																		; Clear out confList

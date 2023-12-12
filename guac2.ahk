@@ -373,6 +373,15 @@ ReadXls() {
 	
 ;#endregion
 
+;#region == PATIENT DIRECTORY HANDLING =====================================================================
+patdir(LV,rownum) {
+/* This is just a shell
+*/	
+	MsgBox
+}
+	
+;#endregion
+
 ;#region == FORMATTING =====================================================================================
 readIni(section) {
 /*	Reads a set of variables

@@ -190,39 +190,38 @@ GetConfDir(confDate) {
 }
 
 makeConfLV() {
-	; global confList, winDim, gXml, mainUI
+	global confList, winDim, gXml, mainUI
 
-	; Gui, mainUI:Default
-	; Gui, Font, s16
-	; Gui, Add, ListView, % "r" confList.length()+1 " x20 w" windim.gw-20
-	; 	. " Hdr AltSubmit Grid BackgroundSilver NoSortHdr NoSort gPatDir"
-	; 	, Name|Done|Takt|Diagnosis|Note
-	; Progress, % (firstRun)?"off":"",,Rendering conference list
-	; for key,val in confList
-	; {
-	; 	if (key=A_index) {
-	; 		keyNm := confList[key]											; UPPER CASE name
-	; 		keyElement := "/root/id[@name='" keyNm "']"
-	; 		keyDx := (tmp:=gXml.selectSingleNode(keyElement "/diagnosis").text) ? tmp : ""	; DIAGNOSIS, if present
-	; 		keyDone := gXml.getAtt(keyElement,"done")						; DONE flag
-	; 		keyDur := (tmp:=gXml.getAtt(keyElement,"dur")) ? formatSec(tmp) : ""	; If dur exists, get it
-	; 		keyNote := (tmp:=gXml.selectSingleNode(keyElement "/notes").text) ? tmp : ""	; NOTE, if present
-	; 		LV_Add(""
-	; 			,keyNm														; UPPER CASE name
-	; 			,(keyDone) ? "x" : ""										; DONE or not
-	; 			,(keyDur) ? keyDur.MM ":" keyDur.SS : ""					; total DUR spent on this patient MM:SS
-	; 			,(keyDx) ? keyDx : ""										; Diagnosis
-	; 			,(keyNote) ? keyNote : "")									; note for this patient
-	; 	}
-	; }
+	mainLV := mainUI.Add("ListView"
+		, "r" confList.Count+1 " x20 w" windim.gw-20
+		 	. " Hdr AltSubmit Grid BackgroundSilver NoSortHdr NoSort"
+		, ["Name","Done","Takt","Diagnosis","Note"])
+	mainLV.OnEvent("DoubleClick",PatDir)
+
+	for name,val in confList
+	{
+		keyElement := "/root/id[@name='" name "']"
+		keyNode := gXml.selectSingleNode(keyElement)
+		keyDx := (tmp:=keyNode.selectSingleNode("diagnosis").text) ? tmp : ""			; DIAGNOSIS, if present
+		keyDone := keyNode.getAttribute("done")											; DONE flag
+		keyDur := (tmp:=keyNode.getAttribute("dur")) ? formatSec(tmp) : ""				; DUR, if present
+		keyNote := (tmp:=keyNode.selectSingleNode("notes").text) ? tmp : ""				; NOTE, if present
+		mainLV.Add(""
+			,name														; UPPER CASE name
+			,(keyDone) ? "x" : ""										; DONE or not
+			,(keyDur) ? keyDur.MM ":" keyDur.SS : ""					; total DUR spent on this patient MM:SS
+			,(keyDx) ? keyDx : ""										; Diagnosis
+			,(keyNote) ? keyNote : "")									; note for this patient
+	}
 	; Progress, Off
-	; LV_ModifyCol()
-	; LV_ModifyCol(1,"200")
-	; LV_ModifyCol(2,"AutoHdr Center")
-	; LV_ModifyCol(3,"AutoHdr Center")
-	; LV_ModifyCol(4,"AutoHdr")
-	; LV_ModifyCol(5,"AutoHdr")
-	; Return
+	mainLV.ModifyCol()
+	mainLV.ModifyCol(1,"200")
+	mainLV.ModifyCol(2,"AutoHdr Center")
+	mainLV.ModifyCol(3,"AutoHdr Center")
+	mainLV.ModifyCol(4,"AutoHdr")
+	mainLV.ModifyCol(5,"AutoHdr")
+	
+	Return
 }
 
 NetConfDir(yyyy:="",mmm:="",dd:="") {

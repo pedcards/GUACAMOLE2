@@ -114,9 +114,25 @@ MainGUI()
 	Return
 }
 
-	
-	Return
+DateGUI(*) {
+	global confDate
+	dateGUI := Gui("AlwaysOnTop","Select PCC date...")
+	dateGUI.Add("MonthCal","vEncDt",confDate.YMD)
+	dateGUI.OnEvent("Change",DateChoose)
+	dateGUI.Show("AutoSize")
+	; Gui, Add, MonthCal, vEncDt gDateChoose, % dt.YYYY dt.MM dt.DD					; Show selected date and month selector
+	; Gui, Show, AutoSize, Select PCC date...
+	return
 }
+
+DateChoose(*) {
+	; Gui, date:Destroy																; Close MonthCal UI
+	; dt := GetConfDate(EncDt)														; Reacquire DT based on value
+	; conflist =																		; Clear out confList
+	; Gosub MainGUI																	; Redraw MainGUI
+	; return
+}
+
 ;#endregion  ============================================================================================
 
 ;#region == CONFERENCE DIRECTORIES ======================================================================

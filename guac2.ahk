@@ -84,7 +84,7 @@ formatSec(secs) {
 ;#region == MAIN GUI ===============================================================================================
 MainGUI()
 {
-	global confDate, isDevt, winDim
+	global confDate, isDevt, winDim, mainUI
 
 	if !IsSet(confDate) {
 		if (isDevt) {
@@ -105,12 +105,14 @@ MainGUI()
 	mainUI.Add("Text","yp+14 xp wp +Center","Merged OnLine Elements")
 	mainUI.Add("Text","y10 x54","Time")
 	mainUI.Add("Text","y10 x" winDim.gw-72,"Duration")
-	mainUI.SetFont("Norm")
-	makeConfLV()		<==														; Draw the patient grid ListView
+	mainUI.SetFont("Norm s16")
+	makeConfLV()																		; Draw the patient grid ListView
 	mainDateBtn := mainUI.Add("Button","wp +Center ", confDate.MDY)						; Date selector button
-	mainDateBtn.OnEvent("Click",DateGUI)  <==
+	mainDateBtn.OnEvent("Click",DateGUI)
 	mainUI.Show("AutoSize")
 
+	Return
+}
 
 	
 	Return

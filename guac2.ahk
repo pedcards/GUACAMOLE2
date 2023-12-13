@@ -25,7 +25,7 @@ SetWorkingDir(A_ScriptDir)
 		isPresenter := false
 
 	firstRun := true
-	; SplashImage, % chipDir "guac.jpg", B2 
+	; SplashImage, % netDir "\guac.jpg", B2 
 
 	datedir := Map()
 	datedir.Default := Map()
@@ -42,7 +42,6 @@ SetWorkingDir(A_ScriptDir)
 ;#region == Main Loop ===================================================================================
 	MainGUI()																			; Draw the main GUI
 	if (firstRun) {
-		;~ SoundPlay, % chipDir "chillin.wav", Wait
 		; SplashImage, off
 		firstRun := false
 	}

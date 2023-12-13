@@ -304,29 +304,32 @@ ReadXls() {
 	headerRow := 0
 	nameCol := 0
 	maxcol := 1
-	
+
 	Loop 
 	{
 		RowNum := A_Index																; Loop through rows in RowNum
-		chk := oWorkbook.Sheets(1).Range("A" RowNum).value								; Get value in first column (e.g. A1..A10)
-		if (RowNum=1) {																	; First row is just last file update
-			upDate := chk
-			continue
-		}
-		if !(chk)																		; if empty, then end of file or bad file
-			break
 		Loop
 		{	
 			ColNum := A_Index															; Iterate through columns
-			if (colnum>maxcol)															; Extend maxcol (largest col) when we have passed the old max
-				maxcol:=colnum
 			cel := oWorkbook.Sheets(1).Range(colArr[ColNum] RowNum).value				; Get value of colNum rowNum (e.g. C4)
-			if ((cel="") && (colnum=maxcol))											; Find max column
+			if (colnum>maxcol) {														; Extend maxcol (largest col) when we have passed the old max
+				if (cel="") {
+					break
+				}
+				maxcol:=colnum
+			}
+			if !(staffRow) && (cel ~= "i)\d{2}.\d{2}.\d{2,4}|Echo|PCC Fellow") {
+				staffRow := RowNum
 				break
-			if (rownum=2) {																; Row 2 is headers
+			}
+			if (cel ~= "i)Patient name|MRN|Cardiologist") {
+				headerRow := RowNum
+			}
+			if (rownum=headerRow) {														; Row 2 is headers
 				; Patient name / MRN / Cardiologist / Diagnosis / conference prep / scheduling notes / presented / deferred / imaging needed / ICU LOS / Total LOS / Surgeons / time
 				if instr(cel,"Patient name") {											; Fix some header names
 					cel:="Name"
+					nameCol := ColNum
 				}
 				if instr(cel,"Conference prep") {
 					cel:="Prep"
@@ -338,17 +341,19 @@ ReadXls() {
 					cel:="Imaging"
 				}
 				xls_hdr[ColNum] := trim(cel)											; Add cel to headers xls_hdr[]
-			} else {
+			} if (rownum>headerRow) {
 				xls_cel[ColNum] := cel													; Otherwise add value to xls_cel[]
 			}
 		}
-		if (rownum=2) {
-			continue
-		}
 		xls_mrn := Round(xls_cel[ObjHasValue(xls_hdr,"MRN")])							; Get value in xls_hdr MRN column 
 		xls_name := xls_cel[ObjHasValue(xls_hdr,"Name")]								; Get name from xls_hdr Name column
-		if !(xls_mrn)																	; Empty MRN, move on
-			continue
+		if !(xls_mrn) {																	; Empty MRN, move on
+			if (headerRow) && (RowNum>headerRow) {										; No MRN past headerrow means last row
+				break
+			} else {
+				Continue
+			}
+		}
 		xls_nameL := RegExReplace(strX(xls_name,"",1,1,",",1,1),"\'","_")
 		xls_nameUP := StrUpper(xls_nameL)												; Name in upper case
 		xls_id := "/root/id[@name='" xls_nameUP "']"									; Element string for id[@name]

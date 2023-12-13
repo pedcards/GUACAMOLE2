@@ -300,7 +300,11 @@ ReadXls() {
 	colArr := ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q"] 	; array of column letters
 	xls_hdr := Map()
 	xls_cel := Map()
-	maxcol := 0
+	staffRow := 0
+	headerRow := 0
+	nameCol := 0
+	maxcol := 1
+	
 	Loop 
 	{
 		RowNum := A_Index																; Loop through rows in RowNum

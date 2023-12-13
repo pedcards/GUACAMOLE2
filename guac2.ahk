@@ -185,10 +185,10 @@ GetConfDir(confDate) {
 	{
 		tmpNm := A_LoopFileName
 		tmpExt := A_LoopFileExt
-		if (tmpNm ~= "i)Fast.Track|-FT|\sFT")											; exclude Fast Track files and folders
+		if (tmpNm ~= "i)Fast.?Track|-FT|\sFT|\sPrep\.")									; exclude Fast Track files and folders
 			continue
 		if (tmpExt) {																	; evaluate files with extensions
-			if (tmpNm ~= "i)(\~\$|(Fast.Track|-FT|\sFT))")								; exclude temp and "Fast Track" files
+			if (tmpNm ~= "i)(\~\$|(Fast.?Track|-FT|\sFT|\sPrep\.))")								; exclude temp and "Fast Track" files
 				continue
 			if (tmpNm ~= "i)(PCC)?.*\d{1,2}\.\d{1,2}\.\d{2,4}.*xls") {					; find XLS that matches PCC 3.29.16.xlsx
 				confXls := tmpNm

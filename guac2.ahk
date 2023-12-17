@@ -318,7 +318,7 @@ ReadXls() {
 				}
 				maxcol:=colnum
 			}
-			if !(staffRow) && (cel ~= "i)\d{2}.\d{2}.\d{2,4}|Echo|PCC Fellow") {
+			if !(staffRow) && (cel ~= "i)\d{1,2}.\d{1,2}.\d{2,4}|Echo MD|PCC Fellow") {
 				staffRow := RowNum
 				break
 			}

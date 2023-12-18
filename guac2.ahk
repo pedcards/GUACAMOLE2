@@ -13,7 +13,7 @@ SetWorkingDir(A_ScriptDir)
 	isDevt := InStr(A_WorkingDir,"AhkProjects")
 	if (isDevt) {
 		netdir := A_WorkingDir "\devfiles\Tuesday_Conference"							; local files
-		confStart := "20220614140000"
+		confStart := "20231212140000"
 	} else {
 		netdir := "\\childrens\files\HCConference\Tuesday_Conference"					; networked Conference folder
 		confStart := A_Now
@@ -87,7 +87,7 @@ MainGUI()
 
 	if !IsSet(confDate) {
 		if (isDevt) {
-			confDate := GetConfDate("20220614")											; use test dir. change this if want "live" handling
+			confDate := GetConfDate("20231212")											; use test dir. change this if want "live" handling
 		} else {
 			confDate := GetConfDate()													; determine next conference date into array dt
 		}

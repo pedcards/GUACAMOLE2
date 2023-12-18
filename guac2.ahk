@@ -226,10 +226,10 @@ makeConfLV() {
 	{
 		keyElement := "/root/id[@name='" name "']"
 		keyNode := gXml.selectSingleNode(keyElement)
-		keyDx := (tmp:=keyNode.selectSingleNode("diagnosis").text) ? tmp : ""			; DIAGNOSIS, if present
+		keyDx := (tmp:=keyNode.selectSingleNode("diagnosis")) ? tmp.text : ""			; DIAGNOSIS, if present
 		keyDone := keyNode.getAttribute("done")											; DONE flag
 		keyDur := (tmp:=keyNode.getAttribute("dur")) ? formatSec(tmp) : ""				; DUR, if present
-		keyNote := (tmp:=keyNode.selectSingleNode("notes").text) ? tmp : ""				; NOTE, if present
+		keyNote := (tmp:=keyNode.selectSingleNode("notes")) ? tmp.text : ""				; NOTE, if present
 		mainLV.Add(""
 			,name														; UPPER CASE name
 			,(keyDone) ? "x" : ""										; DONE or not

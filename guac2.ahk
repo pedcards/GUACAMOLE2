@@ -25,7 +25,11 @@ SetWorkingDir(A_ScriptDir)
 		isPresenter := false
 
 	firstRun := true
-	; SplashImage, % netDir "\guac.jpg", B2 
+
+	splashUI := Gui("-Caption")
+	splashUI.Add("Picture","",".\files\guac.jpg")
+	splashUI.Add("Progress","cBlue vprogress wP")
+	splashUI.Show("AutoSize")
 
 	datedir := Map()
 	datedir.Default := Map()
@@ -42,7 +46,7 @@ SetWorkingDir(A_ScriptDir)
 ;#region == Main Loop ===================================================================================
 	MainGUI()																			; Draw the main GUI
 	if (firstRun) {
-		; SplashImage, off
+		splashUI.Destroy
 		firstRun := false
 	}
 	SetTimer(confTimer, 1000)															; Update ConfTime every 1000 ms

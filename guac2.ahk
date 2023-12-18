@@ -83,7 +83,7 @@ formatSec(secs) {
 ;#region == MAIN GUI ===============================================================================================
 MainGUI()
 {
-	global confDate, isDevt, winDim, mainUI
+	global confDate, isDevt, winDim, mainUI, mainUI_time, mainUI_dur
 
 	if !IsSet(confDate) {
 		if (isDevt) {
@@ -96,8 +96,8 @@ MainGUI()
 
 	mainUI := Gui("","GUACAMOLE Main - " confDate.MDY)
 	mainUI.SetFont("s16 Bold")
-	mainUI.Add("Text","y26 x20 vCTime","              ")								; Conference real time
-	mainUI.Add("Text","y26 x" winDim.gw-100 " vCDur","              ")					; Conference duration (only exists for Presenter)
+	mainUI_time := mainUI.Add("Text","y26 x20","              ")						; Conference real time
+	mainUI_dur := mainUI.Add("Text","y26 x" winDim.gw-100 ,"              ")			; Conference duration (only exists for Presenter)
 	mainUI.Add("Text","y0 x0 w" winDim.gw " h20 +Center",".-= GUACAMOLE =-.")
 	mainUI.SetFont("s8 Norm Italic")
 	mainUI.Add("Text","yp+30 xp wp +Center","General Use Access for Conference Archive")

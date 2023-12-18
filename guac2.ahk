@@ -107,7 +107,7 @@ MainGUI()
 	mainUI.SetFont("Norm s16")
 	makeConfLV()																		; Draw the patient grid ListView
 	mainDateBtn := mainUI.Add("Button","wp +Center ", confDate.MDY)						; Date selector button
-	mainDateBtn.OnEvent("Click",DateGUI)
+	; mainDateBtn.OnEvent("Click",DateGUI)
 	mainUI.Show("AutoSize")
 
 	Return

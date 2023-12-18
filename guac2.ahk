@@ -299,15 +299,16 @@ ReadXls() {
 	oWorkbook := ComObjGet(netDir "\" confDir "\guac.xlsx")								; Open the copy in memory (this is a one-way street)
 	colArr := ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q"] 	; array of column letters
 	xls_hdr := Map()
-	xls_cel := Map()
 	staffRow := 0
 	headerRow := 0
-	nameCol := 0
+	dataRow := false
 	maxcol := 1
 
 	Loop 
 	{
 		RowNum := A_Index																; Loop through rows in RowNum
+		xls_cel := Map()																; Reset xls_cel for each row
+
 		Loop
 		{	
 			ColNum := A_Index															; Iterate through columns
@@ -329,7 +330,6 @@ ReadXls() {
 				; Patient name / MRN / Cardiologist / Diagnosis / conference prep / scheduling notes / presented / deferred / imaging needed / ICU LOS / Total LOS / Surgeons / time
 				if instr(cel,"Patient name") {											; Fix some header names
 					cel:="Name"
-					nameCol := ColNum
 				}
 				if instr(cel,"Conference prep") {
 					cel:="Prep"
@@ -341,18 +341,20 @@ ReadXls() {
 					cel:="Imaging"
 				}
 				xls_hdr[ColNum] := trim(cel)											; Add cel to headers xls_hdr[]
-			} if (rownum>headerRow) {
+			} 
+			if (headerRow) && (RowNum>headerRow) {
 				xls_cel[ColNum] := cel													; Otherwise add value to xls_cel[]
+				dataRow := true
 			}
 		}
-		xls_mrn := Round(xls_cel[ObjHasValue(xls_hdr,"MRN")])							; Get value in xls_hdr MRN column 
-		xls_name := xls_cel[ObjHasValue(xls_hdr,"Name")]								; Get name from xls_hdr Name column
-		if !(xls_mrn) {																	; Empty MRN, move on
-			if (headerRow) && (RowNum>headerRow) {										; No MRN past headerrow means last row
-				break
-			} else {
-				Continue
-			}
+		if !(dataRow) {																	; Don't parse xls_cel until dataRow
+			continue
+		}
+
+		xls_mrn := xls_cel[ObjHasValue(xls_hdr,"MRN")]
+		xls_name := xls_cel[ObjHasValue(xls_hdr,"Name")]
+		if (xls_mrn="") {																; No MRN past headerRow means last row
+			break
 		}
 		xls_nameL := RegExReplace(strX(xls_name,"",1,1,",",1,1),"\'","_")
 		xls_nameUP := StrUpper(xls_nameL)												; Name in upper case
@@ -362,7 +364,7 @@ ReadXls() {
 			xml.addElement(gXml.selectSingleNode("root"),"id",{name:xls_nameUP})
 		}
 		gXlsID := gXml.selectSingleNode(xls_id)
-		gXlsID.setAttribute("mrn",xls_mrn)												; Set MRN
+		gXlsID.setAttribute("mrn",Round(xls_mrn))										; Set MRN
 		if !IsObject(gXlsID.selectSingleNode("name_full")) {							; Add full name if not present
 			xml.addElement(gXlsID,"name_full",xls_name)
 		}

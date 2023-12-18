@@ -53,13 +53,12 @@ ExitApp()
 
 ;#region == TIMERS ===============================================================================================
 confTimer() {
-	global isPresenter, confStart
-	tmp := FormatTime(A_now,"HH:mm:ss")													; Format the current time
-	; GuiControl, mainUI:Text, CTime, % tmp												; Update the main GUI current time
+	global isPresenter, confStart, mainUI_time, mainUI_dur
+
+	mainUI_time.value := FormatTime(A_now,"HH:mm:ss")									; Update the main GUI current time
 	
 	if (isPresenter) {																	; For presenter only,
-		tt := elapsed(confStart,A_Now)													; Total time elapsed
-		; GuiControl, mainUI:Text, CDur, % tt.HHMMSS									; Update the main GUI elapsed time
+		mainUI_dur.value := elapsed(confStart,A_Now).HHMMSS								; Update the main GUI elapsed time
 	}
 	Return
 }

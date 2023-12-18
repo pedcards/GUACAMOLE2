@@ -226,10 +226,10 @@ makeConfLV() {
 	{
 		keyElement := "/root/id[@name='" name "']"
 		keyNode := gXml.selectSingleNode(keyElement)
-		keyDx := (tmp:=keyNode.selectSingleNode("diagnosis")) ? tmp.text : ""			; DIAGNOSIS, if present
+		keyDx := xml.getText(keyNode.selectSingleNode("diagnosis"))						; DIAGNOSIS, if present
 		keyDone := keyNode.getAttribute("done")											; DONE flag
 		keyDur := (tmp:=keyNode.getAttribute("dur")) ? formatSec(tmp) : ""				; DUR, if present
-		keyNote := (tmp:=keyNode.selectSingleNode("notes")) ? tmp.text : ""				; NOTE, if present
+		keyNote := xml.getText(keyNode.selectSingleNode("notes"))						; NOTE, if present
 		mainLV.Add(""
 			,name														; UPPER CASE name
 			,(keyDone) ? "x" : ""										; DONE or not
@@ -288,9 +288,7 @@ NetConfDir(yyyy:="",mmm:="",dd:="") {
 ReadXls() {
 	global gXml, confXls
 
-	if IsObject(tmpXml:=gXml.selectSingleNode("/root/done")) {							; last time ReadXLS run
-		tmpXml := tmpXml.text
-	}
+	tmpXml := xml.getText(gXml.selectSingleNode("/root/done"))
 	tmpXls:=FileGetTime(confXls)														; get XLS modified time
 	if (DateDiff(tmpXls,tmpXml,"Seconds") < 0) {										; Compare XLS-XML time diff
 		return

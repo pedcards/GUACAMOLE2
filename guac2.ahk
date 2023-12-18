@@ -183,7 +183,6 @@ GetConfDir(confDate) {
 	filelist := ""																		; Clear out filelist string
 	patnum := ""																		; and zero out count of patient folders
 	
-	; Progress,,,Reading conference directory
 	Loop Files ".\*", "DF"																; Loop through all files and directories in confDir
 	{
 		tmpNm := A_LoopFileName
@@ -207,9 +206,9 @@ GetConfDir(confDate) {
 		if !IsObject(tmpE := gXml.selectSingleNode(tmpPath)) {
 			xml.addElement(gXml.selectSingleNode("root"),"id",{name:tmpNmUP})			; Add to Guac XML if not present
 		}
+		splashUI["progress"].value += 2
 	}
 	if (confXls) {																		; Read confXls if present
-		; Progress, % (firstRun)?"off":"",,Reading XLS file
 		readXls()
 	}
 	gXml.save("guac.xml")																; Write Guac XML
@@ -217,7 +216,7 @@ GetConfDir(confDate) {
 }
 
 makeConfLV() {
-	global confList, winDim, gXml, mainUI
+	global confList, winDim, gXml
 
 	mainLV := mainUI.Add("ListView"
 		, "r" confList.Count+1 " x20 w" windim.gw-20
@@ -239,8 +238,10 @@ makeConfLV() {
 			,(keyDur) ? keyDur.MM ":" keyDur.SS : ""					; total DUR spent on this patient MM:SS
 			,(keyDx) ? keyDx : ""										; Diagnosis
 			,(keyNote) ? keyNote : "")									; note for this patient
+		splashUI["progress"].value += 5
 	}
-	; Progress, Off
+	splashUI.Destroy
+
 	mainLV.ModifyCol()
 	mainLV.ModifyCol(1,"200")
 	mainLV.ModifyCol(2,"AutoHdr Center")
@@ -294,7 +295,7 @@ ReadXls() {
 	tmpXml := xml.getText(gXml.selectSingleNode("/root/done"))
 	tmpXls:=FileGetTime(confXls)														; get XLS modified time
 	if (DateDiff(tmpXls,tmpXml,"Seconds") < 0) {										; Compare XLS-XML time diff
-		return
+		; return
 	}
  	FileCopy(confXls, "guac.xlsx", 1)													; Create a copy of the active XLS file 
 	oWorkbook := ComObjGet(netDir "\" confDir "\guac.xlsx")								; Open the copy in memory (this is a one-way street)
@@ -351,6 +352,7 @@ ReadXls() {
 		if !(dataRow) {																	; Don't parse xls_cel until dataRow
 			continue
 		}
+		splashUI["progress"].value += 2
 
 		xls_mrn := xls_cel[ObjHasValue(xls_hdr,"MRN")]
 		xls_name := xls_cel[ObjHasValue(xls_hdr,"Name")]

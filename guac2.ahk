@@ -1,7 +1,7 @@
 /*	GUACAMOLE conference data browser (C)2023 TC
 	Version 2 - uses AHK2 and improved GUI
 */
-#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2
 SetWorkingDir(A_ScriptDir)
 #Include "%A_ScriptDir%\Includes"
 #Warn VarUnset, OutputDebug

@@ -620,7 +620,7 @@ ObjHasValue(aObj, aValue, rx:="") {
 ; ============ INCLUDES =================
 #Include xml2.ahk
 #Include strx2.ahk
-; #Include MsgBox2.ahk
+#Include MsgBox2.ahk
 ; #Include Class_LV_Colors.ahk
 ; #Include sift3.ahk
-; #Include CMsgBox.ahk
+#Include choicebox.ahk

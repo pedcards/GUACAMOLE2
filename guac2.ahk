@@ -14,6 +14,14 @@ SetWorkingDir(A_ScriptDir)
 	if (isDevt) {
 		netdir := A_WorkingDir "\devfiles\Tuesday_Conference"							; local files
 		confStart := "20231212140000"
+		tmp := choiceBox("Development",
+						"Choose date",
+						[confStart,"TODAY"],
+						"-iconQ")
+		if (tmp="TODAY") {
+			confStart := A_Now
+		}
+		
 	} else {
 		netdir := "\\childrens\files\HCConference\Tuesday_Conference"					; networked Conference folder
 		confStart := A_Now
